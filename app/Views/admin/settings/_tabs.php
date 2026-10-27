@@ -1,0 +1,1 @@
+<div class="subnav"><?php foreach ($tabs as $k => $t): if ($k === 'mail' && !can('mail.configure')) continue; ?><a class="<?= $tab === $k ? 'active' : '' ?>" href="<?= e(url('/admin/settings/' . $k)) ?>"><?= icon($t[1]) ?><?= e($t[0]) ?></a><?php endforeach; ?></div>

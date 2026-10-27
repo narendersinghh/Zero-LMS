@@ -1,0 +1,29 @@
+# Builds an installable zip whenever a version tag (v1.2.3) is pushed.
+# The in-app updater (Admin → System & updates) installs the zip attached to the latest release.
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.2' }
+      - name: Lint & build assets
+        run: |
+          find . -name "*.php" -not -path "./.git/*" -print0 | xargs -0 -n1 php -l > /dev/null
+          php tools/build.php
+      - name: Stamp version
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          echo "{\"version\":\"$V\",\"released\":\"$(date -u +%F)\"}" > version.json
+      - name: Package
+        run: zip -r "zeroes-${GITHUB_REF_NAME}.zip" . -x ".git/*" ".github/*" ".env" "storage/videos/*.mp4" "storage/logs/*.log" "storage/cache/*.php" "storage/sessions/sess_*"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: zeroes-${{ github.ref_name }}.zip
+          generate_release_notes: true

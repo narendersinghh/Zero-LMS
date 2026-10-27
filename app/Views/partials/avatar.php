@@ -1,0 +1,1 @@
+<span class="avatar<?= isset($size) ? ' avatar-' . e($size) : '' ?>"><?php if (!empty($u['avatar'])): ?><img src="<?= e(upload_url($u['avatar'])) ?>" alt="" loading="lazy"><?php else: ?><?= e(initials($u['name'] ?? '?')) ?><?php endif; ?></span>

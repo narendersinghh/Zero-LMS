@@ -1,0 +1,226 @@
+/* Zeroes LMS — admin tools: rich editor, chunked uploader, video picker, curriculum drag & drop, live theme preview. */
+(function () {
+  'use strict';
+  var d = document, $ = function (s, c) { return (c || d).querySelector(s); }, $$ = function (s, c) { return Array.prototype.slice.call((c || d).querySelectorAll(s)); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  /* Sidebar */
+  d.addEventListener('click', function (e) {
+    if (e.target.closest('[data-sidebar-toggle]')) { $('#sidebar').classList.add('open'); $('.sidebar-backdrop').classList.add('open'); }
+    if (e.target.closest('[data-sidebar-close]')) { $('#sidebar').classList.remove('open'); $('.sidebar-backdrop').classList.remove('open'); }
+  });
+  /* Conditional fields: data-show-when="name=value" */
+  function applyShow() {
+    $$('[data-show-when]').forEach(function (el) {
+      var p = el.getAttribute('data-show-when').split('='), form = el.closest('form') || d;
+      var inp = form.querySelector('[name="' + p[0] + '"]:checked') || form.querySelector('select[name="' + p[0] + '"]');
+      el.hidden = !inp || inp.value !== p[1];
+    });
+  }
+  d.addEventListener('change', function (e) { if (e.target.name) { applyShow(); } });
+  applyShow();
+  /* Slug */
+  var ss = $('[data-slug-source]'), st = $('[data-slug-target]');
+  if (ss && st) { var touched = st.value !== ''; st.addEventListener('input', function () { touched = st.value !== ''; }); ss.addEventListener('input', function () { if (!touched) { st.placeholder = ss.value.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'auto-generated'; } }); }
+  /* Image preview */
+  $$('[data-preview-input]').forEach(function (i) {
+    i.addEventListener('change', function () {
+      var pv = i.closest('.field,.card').querySelector('[data-image-preview]');
+      if (pv && i.files[0]) { pv.style.backgroundImage = 'url(' + URL.createObjectURL(i.files[0]) + ')'; pv.innerHTML = ''; }
+    });
+  });
+  $$('[data-file-label]').forEach(function (i) { i.addEventListener('change', function () { var n = i.closest('label').querySelector('[data-file-name]'); if (n && i.files[0]) { n.textContent = i.files[0].name; } }); });
+  /* Bulk selection */
+  $$('[data-bulk]').forEach(function (form) {
+    var bar = $('[data-bulkbar]', form), cnt = $('[data-bulk-count]', form), all = $('[data-check-all]', form);
+    function upd() { var n = $$('[data-check]:checked', form).length; bar.hidden = !n; cnt.textContent = n; }
+    if (all) { all.addEventListener('change', function () { $$('[data-check]', form).forEach(function (c) { c.checked = all.checked; }); upd(); }); }
+    form.addEventListener('change', function (e) {
+      if (e.target.matches('[data-check]')) { upd(); }
+      if (e.target.matches('[data-bulk-action]')) {
+        var a = e.target.value, sh = function (s, on) { var el = $(s, form); if (el) { el.hidden = !on; } };
+        sh('[data-bulk-course]', a === 'enroll'); sh('[data-bulk-days]', a === 'extend'); sh('[data-bulk-date]', a === 'set_expiry');
+        sh('[data-bulk-notify]', ['enroll', 'extend', 'set_expiry', 'lifetime'].indexOf(a) > -1);
+      }
+    });
+  });
+  /* Enrollment quick extend */
+  d.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-add-days]');
+    if (!b) { return; }
+    var form = b.closest('form'), inp = form.querySelector('[name="expires_at"]'), base = inp.value ? new Date(inp.value) : new Date();
+    if (base < new Date()) { base = new Date(); }
+    base.setDate(base.getDate() + (+b.getAttribute('data-add-days')));
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    inp.value = base.getFullYear() + '-' + p(base.getMonth() + 1) + '-' + p(base.getDate()) + 'T' + p(base.getHours()) + ':' + p(base.getMinutes());
+    var lt = form.querySelector('[name="lifetime"]'); if (lt) { lt.checked = false; }
+  });
+  d.addEventListener('input', function (e) { if (e.target.name === 'expires_at' && e.target.value) { var lt = e.target.form && e.target.form.querySelector('[name="lifetime"]'); if (lt) { lt.checked = false; } } });
+  /* Admin video preview */
+  d.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-preview-video]');
+    if (!b) { return; }
+    var m = $('#preview-modal'), v = $('[data-preview-player]', m);
+    v.src = b.getAttribute('data-preview-video'); m.showModal(); v.play();
+    m.addEventListener('close', function () { v.pause(); v.removeAttribute('src'); v.load(); }, { once: true });
+  });
+  /* ---------- Rich text editor (contenteditable, sanitized server-side) ---------- */
+  var lastEditor = null;
+  $$('[data-editor]').forEach(function (wrap) {
+    var ta = $('textarea', wrap), bar = d.createElement('div'), area = d.createElement('div'), src = false;
+    bar.className = 'ed-bar';
+    var tools = [['b', 'bold', 'B'], ['i', 'italic', 'I'], ['u', 'underline', 'U'], ['|'], ['h2', 'formatBlock:h2', 'H2'], ['h3', 'formatBlock:h3', 'H3'], ['p', 'formatBlock:p', '¶'], ['q', 'formatBlock:blockquote', '❝'], ['|'], ['ul', 'insertUnorderedList', '• List'], ['ol', 'insertOrderedList', '1. List'], ['|'], ['a', 'link', 'Link'], ['img', 'image', 'Image'], ['hr', 'insertHorizontalRule', '—'], ['x', 'removeFormat', 'Clear'], ['|'], ['src', 'source', '</>']];
+    tools.forEach(function (t) {
+      if (t[0] === '|') { var s = d.createElement('span'); s.className = 'ed-sep'; bar.appendChild(s); return; }
+      var b = d.createElement('button'); b.type = 'button'; b.textContent = t[2]; b.title = t[1]; b.setAttribute('data-cmd', t[1]); bar.appendChild(b);
+    });
+    area.className = 'ed-area prose'; area.contentEditable = 'true'; area.setAttribute('data-placeholder', 'Write something…'); area.innerHTML = ta.value;
+    var srcTa = d.createElement('textarea'); srcTa.className = 'ed-src'; srcTa.hidden = true;
+    wrap.insertBefore(bar, ta); wrap.insertBefore(area, ta); wrap.insertBefore(srcTa, ta);
+    function sync() { ta.value = src ? srcTa.value : area.innerHTML; }
+    area.addEventListener('input', sync); srcTa.addEventListener('input', sync);
+    area.addEventListener('focus', function () { lastEditor = { area: area, wrap: wrap }; });
+    area.addEventListener('paste', function (e) {
+      var html = (e.clipboardData || window.clipboardData).getData('text/html');
+      if (html) { e.preventDefault(); var tmp = d.createElement('div'); tmp.innerHTML = html; $$('script,style,meta,link', tmp).forEach(function (n) { n.remove(); }); $$('*', tmp).forEach(function (n) { n.removeAttribute('style'); n.removeAttribute('class'); }); d.execCommand('insertHTML', false, tmp.innerHTML); }
+    });
+    bar.addEventListener('mousedown', function (e) { if (e.target.closest('button')) { e.preventDefault(); } });
+    bar.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) { return; }
+      var c = b.getAttribute('data-cmd');
+      if (c === 'source') { src = !src; if (src) { srcTa.value = area.innerHTML; } else { area.innerHTML = srcTa.value; } srcTa.hidden = !src; area.hidden = src; b.classList.toggle('on', src); sync(); return; }
+      area.focus();
+      if (c === 'link') { var u = prompt('Link URL (https://…)'); if (u) { d.execCommand('createLink', false, u); } }
+      else if (c === 'image') { var iu = prompt('Image URL (https://…)'); if (iu) { d.execCommand('insertImage', false, iu); } }
+      else if (c.indexOf('formatBlock:') === 0) { d.execCommand('formatBlock', false, '<' + c.split(':')[1] + '>'); }
+      else { d.execCommand(c, false, null); }
+      sync();
+    });
+    if (ta.form) { ta.form.addEventListener('submit', sync); }
+  });
+  d.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-insert-var]');
+    if (!b) { return; }
+    var subj = $('input[name="subject"]');
+    if (d.activeElement === subj) { subj.setRangeText(b.getAttribute('data-insert-var'), subj.selectionStart, subj.selectionEnd, 'end'); return; }
+    var ed = lastEditor || { area: $('.ed-area') };
+    if (ed.area) { ed.area.focus(); d.execCommand('insertText', false, b.getAttribute('data-insert-var')); ed.area.dispatchEvent(new Event('input')); }
+  });
+  /* ---------- Chunked uploader ---------- */
+  function uid() { var a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a); return Array.prototype.map.call(a, function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
+  function videoDuration(file) { return new Promise(function (res) { try { var v = d.createElement('video'); v.preload = 'metadata'; v.onloadedmetadata = function () { URL.revokeObjectURL(v.src); res(Math.round(v.duration) || 0); }; v.onerror = function () { res(0); }; v.src = URL.createObjectURL(file); } catch (e) { res(0); } }); }
+  $$('[data-uploader]').forEach(function (up) {
+    var url = up.getAttribute('data-url'), size = +up.getAttribute('data-chunk') || 2097152, input = $('[data-file]', up), zone = $('[data-dropzone]', up), queue = $('[data-queue]', up), pick = up.hasAttribute('data-pick');
+    var busy = false, list = [];
+    zone.addEventListener('dragover', function (e) { e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', function () { zone.classList.remove('over'); });
+    zone.addEventListener('drop', function (e) { e.preventDefault(); zone.classList.remove('over'); add(e.dataTransfer.files); });
+    input.addEventListener('change', function () { add(input.files); input.value = ''; });
+    function add(files) { Array.prototype.forEach.call(files, function (f) { var row = d.createElement('div'); row.className = 'uq'; row.innerHTML = '<div class="row between"><b>' + esc(f.name) + '</b><small class="muted">' + (f.size / 1048576).toFixed(1) + ' MB</small></div><div class="progress"><i></i></div><small class="muted st">Waiting…</small>'; queue.appendChild(row); list.push({ f: f, row: row }); }); next(); }
+    function next() {
+      if (busy || !list.length) { return; }
+      busy = true;
+      var it = list.shift(), f = it.f, total = Math.max(1, Math.ceil(f.size / size)), id = uid(), i = 0, bar = $('.progress i', it.row), stEl = $('.st', it.row), tries = 0;
+      videoDuration(f).then(function (dur) {
+        (function send() {
+          var fd = new FormData();
+          fd.append('upload_id', id); fd.append('index', i); fd.append('total', total); fd.append('name', f.name); fd.append('duration', dur); fd.append('chunk', f.slice(i * size, (i + 1) * size), 'chunk');
+          Zx.post(url, fd).then(function (j) {
+            i++; tries = 0; bar.style.width = (i / total * 100) + '%'; stEl.textContent = 'Uploading… ' + Math.round(i / total * 100) + '%';
+            if (i < total) { send(); return; }
+            it.row.classList.add('ok'); stEl.textContent = 'Uploaded ✓';
+            if (pick && j.video) { selectVideo(j.video); }
+            busy = false; next();
+            if (!pick && !list.length) { setTimeout(function () { location.reload(); }, 900); }
+          }).catch(function (er) {
+            if (++tries <= 3 && !/allowed|supported/i.test(er.message)) { stEl.textContent = 'Retrying…'; setTimeout(send, 1500 * tries); return; }
+            it.row.classList.add('err'); stEl.textContent = er.message; busy = false; next();
+          });
+        })();
+      });
+    }
+  });
+  /* ---------- Video picker (lesson form) ---------- */
+  var vm = $('#video-modal'), idIn = $('[data-video-id]'), cur = $('[data-video-current]');
+  function selectVideo(v) {
+    if (!idIn) { return; }
+    idIn.value = v.id;
+    cur.innerHTML = '<span class="ltype">▶</span><span class="grow"><b>' + esc(v.title) + '</b><small class="muted">' + esc(v.provider_h || v.provider) + (v.duration_h ? ' · ' + esc(v.duration_h) : '') + '</small></span>';
+    if (vm && vm.open) { vm.close(); }
+    var dur = $('input[name="duration"]'); if (dur && !dur.value && v.duration_h) { dur.value = v.duration_h; }
+    Zx.toast('Video selected', 'success');
+  }
+  if (vm) {
+    var listEl = $('[data-video-list]', vm), searchEl = $('[data-video-search]', vm), sUrl = $('[data-video-pick]').getAttribute('data-search'), t;
+    function load(q) {
+      fetch(sUrl + '?q=' + encodeURIComponent(q || ''), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } }).then(function (r) { return r.json(); }).then(function (j) {
+        listEl.innerHTML = j.items.length ? '' : '<p class="muted small">No videos found. Upload one in the next tab.</p>';
+        j.items.forEach(function (v) { var b = d.createElement('button'); b.type = 'button'; b.className = 'video-item'; b.innerHTML = '<span class="ltype">▶</span><span class="grow"><b>' + esc(v.title) + '</b><small class="muted">' + esc(v.provider_h) + (v.duration_h ? ' · ' + esc(v.duration_h) : '') + '</small></span>'; b.addEventListener('click', function () { selectVideo(v); }); listEl.appendChild(b); });
+      });
+    }
+    vm.addEventListener('zx:open', function () { load(searchEl.value); });
+    searchEl.addEventListener('input', function () { clearTimeout(t); t = setTimeout(function () { load(searchEl.value); }, 250); });
+    var ext = $('[data-external-form]', vm);
+    ext.addEventListener('submit', function (e) {
+      e.preventDefault();
+      Zx.post(ext.getAttribute('action'), new FormData(ext)).then(function (j) { selectVideo(j.video); ext.reset(); }).catch(function (er) { Zx.toast(er.message, 'error'); });
+    });
+  }
+  /* ---------- Curriculum drag & drop ---------- */
+  var cur2 = $('[data-curriculum]');
+  if (cur2) {
+    var dragEl = null, dragType = null, ind = $('[data-save-indicator]'), saveT;
+    function save() {
+      var mods = $$('[data-module]', cur2).map(function (m) { return +m.getAttribute('data-module'); }).filter(Boolean);
+      var lessons = [];
+      $$('[data-module]', cur2).forEach(function (m) { $$('[data-lesson]', m).forEach(function (l) { lessons.push({ id: +l.getAttribute('data-lesson'), module_id: +m.getAttribute('data-module') }); }); });
+      Zx.post(cur2.getAttribute('data-reorder'), { modules: mods, lessons: lessons }, true).then(function () { ind.hidden = false; clearTimeout(saveT); saveT = setTimeout(function () { ind.hidden = true; }, 1600); }).catch(function (er) { Zx.toast(er.message, 'error'); });
+    }
+    cur2.addEventListener('dragstart', function (e) {
+      var l = e.target.closest('[data-lesson]'), m = e.target.closest('[data-module]');
+      if (l) { dragEl = l; dragType = 'lesson'; }
+      else if (m && m.getAttribute('draggable') === 'true') { dragEl = m; dragType = 'module'; }
+      else { return; }
+      e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ''); setTimeout(function () { dragEl.classList.add('dragging'); }, 0);
+    });
+    cur2.addEventListener('dragend', function () { if (dragEl) { dragEl.classList.remove('dragging'); } $$('.drag-over,.drop-before', cur2).forEach(function (x) { x.classList.remove('drag-over', 'drop-before'); }); dragEl = null; save(); });
+    cur2.addEventListener('dragover', function (e) {
+      if (!dragEl) { return; }
+      e.preventDefault();
+      if (dragType === 'lesson') {
+        var mod = e.target.closest('[data-module]'); if (!mod) { return; }
+        var ol = $('[data-lessons]', mod), after = null;
+        $$('[data-lesson]', ol).forEach(function (li) { if (li === dragEl) { return; } var r = li.getBoundingClientRect(); if (!after && e.clientY < r.top + r.height / 2) { after = li; } });
+        if (after) { ol.insertBefore(dragEl, after); } else { ol.appendChild(dragEl); }
+        var em = $('.cempty', mod); if (em) { em.remove(); }
+      } else {
+        var target = e.target.closest('[data-module]');
+        if (!target || target === dragEl || target.getAttribute('data-module') === '0') { return; }
+        var rr = target.getBoundingClientRect();
+        cur2.insertBefore(dragEl, e.clientY < rr.top + rr.height / 2 ? target : target.nextSibling);
+      }
+    });
+  }
+  /* ---------- Branding live preview ---------- */
+  var te = $('[data-theme-editor]');
+  if (te) {
+    var root = d.documentElement;
+    function hexA(h, a) { h = h.replace('#', ''); return 'rgba(' + parseInt(h.substr(0, 2), 16) + ',' + parseInt(h.substr(2, 2), 16) + ',' + parseInt(h.substr(4, 2), 16) + ',' + a + ')'; }
+    te.addEventListener('input', function (e) {
+      var i = e.target;
+      if (i.hasAttribute('data-color-var')) {
+        var code = i.closest('.color-field').querySelector('code'); if (code) { code.textContent = i.value; }
+        if (i.getAttribute('data-mode') === root.getAttribute('data-theme')) {
+          root.style.setProperty(i.getAttribute('data-color-var'), i.value);
+          if (i.getAttribute('data-color-var') === '--accent') { root.style.setProperty('--accent-soft', hexA(i.value, 0.14)); root.style.setProperty('--accent-ring', hexA(i.value, 0.35)); }
+        }
+      }
+      if (i.hasAttribute('data-live-var')) { root.style.setProperty(i.getAttribute('data-live-var'), i.value + (i.getAttribute('data-unit') || '')); }
+    });
+    te.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-preview-mode]'); if (!b) { return; }
+      var mode = b.getAttribute('data-preview-mode');
+      root.setAttribute('data-theme', mode); root.removeAttribute('style');
+      $$('[data-mode="' + mode + '"]', te).forEach(function (i) { root.style.setProperty(i.getAttribute('data-color-var'), i.value); if (i.getAttribute('data-color-var') === '--accent') { root.style.setProperty('--accent-soft', hexA(i.value, 0.14)); root.style.setProperty('--accent-ring', hexA(i.value, 0.35)); } });
+    });
+  }
+})();
