@@ -1,1 +1,15 @@
-{"name":"Certificates","description":"Automatically issue a printable certificate when a student completes a course, with public verification links.","version":"1.0.0","author":"Zeroes"}
+{
+ "name": "Certificates",
+ "description": "Automatically issue a printable certificate when a student completes a course, with public verification links.",
+ "version": "1.0.0",
+ "author": "Zeroes",
+ "icon": "trophy",
+ "color": "yellow",
+ "category": "Engagement",
+ "settings": "/admin/certificates",
+ "features": [
+  "Auto-issued on completion",
+  "Printable / save as PDF",
+  "Public verification page"
+ ]
+}

@@ -1,1 +1,15 @@
-{"name":"Razorpay","description":"Card, UPI, netbanking & wallet payments via Razorpay Payment Links (auto-confirmed, with webhook).","version":"1.0.0","author":"Zeroes"}
+{
+ "name": "Razorpay",
+ "description": "Card, UPI, netbanking & wallet payments via Razorpay Payment Links (auto-confirmed, with webhook).",
+ "version": "1.0.0",
+ "author": "Zeroes",
+ "icon": "key",
+ "color": "orange",
+ "category": "Payments",
+ "settings": "/admin/razorpay",
+ "features": [
+  "Cards, UPI, netbanking, wallets",
+  "Auto-confirmed payment links",
+  "Signed webhook verification"
+ ]
+}

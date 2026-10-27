@@ -5,3 +5,4 @@
 .actions{display:flex;align-items:center;justify-content:flex-end;gap:.5rem;flex-wrap:wrap}
 .card-head .actions{margin-left:auto}
 .kpi-ico{background:var(--surface-2);color:var(--text)}.kpi-ico[style]{color:var(--ink)}
+[hidden]{display:none!important}

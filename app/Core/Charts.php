@@ -6,7 +6,7 @@ class Charts {
     private static int $n = 0;
 
     private static function niceMax(float $v): float {
-        if ($v <= 0) {
+        if ($v <= 4) {
             return 4;}
         $p = 10 ** floor(log10($v));
         foreach ([1, 2, 2.5, 5, 10] as $m) {
@@ -21,32 +21,28 @@ class Charts {
      */
     public static function line(array $series, array $labels, array $opt = []): string {
         $id = 'ch' . (++self::$n);
-        $w = 640;
-        $h = (int)($opt['height'] ?? 220);
-        $pl = 34;
-        $pr = 10;
-        $pt = 12;
-        $pb = 26;
+        $w = 1000;
+        $h = 300;
         $n = max(1, count($labels));
         $max = 0;
         foreach ($series as $s) {
             $max = max($max, ...array_map('floatval', $s['data'] ?: [0]));}
         $max = self::niceMax($max);
-        $fmt = $opt['format'] ?? fn($v) => $v >= 1000 ? round($v / 1000, 1) . 'k' : (string)round($v);
-        $x = fn($i) => $pl + ($n === 1 ? ($w - $pl - $pr) / 2 : $i * ($w - $pl - $pr) / ($n - 1));
-        $y = fn($v) => $pt + ($h - $pt - $pb) * (1 - $v / $max);
+        $fmt = $opt['format'] ?? fn($v) => $v >= 1000 ? round($v / 1000, 1) . 'k' : (string)(fmod($v, 1.0) == 0.0 ? (int)$v : round($v, 1));
+        $x = fn($i) => $n === 1 ? $w / 2 : $i * $w / ($n - 1);
+        $y = fn($v) => $h * (1 - $v / $max);
+        $height = (int)($opt['height'] ?? 220);
+        // The plot stretches to the container (non-scaling strokes); axis labels are HTML so text never distorts.
         $svg = '<svg class="chart" viewBox="0 0 ' . $w . ' ' . $h . '" preserveAspectRatio="none" role="img" aria-label="' . e($opt['label'] ?? 'Chart') . '"><defs>';
         foreach ($series as $k => $s) {
             $c = $s['color'] ?? 'var(--accent)';
-            $svg .= '<linearGradient id="' . $id . 'g' . $k . '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' . $c . '" stop-opacity=".32"/><stop offset="1" stop-color="' . $c . '" stop-opacity="0"/></linearGradient>';}
+            $svg .= '<linearGradient id="' . $id . 'g' . $k . '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' . $c . '" stop-opacity=".3"/><stop offset="1" stop-color="' . $c . '" stop-opacity="0"/></linearGradient>';}
         $svg .= '</defs>';
+        $yl = '';
         for ($g = 0; $g <= 4; $g++) {
-            $gy = $pt + ($h - $pt - $pb) * $g / 4;
-            $svg .= '<line class="chart-grid" x1="' . $pl . '" x2="' . ($w - $pr) . '" y1="' . round($gy, 1) . '" y2="' . round($gy, 1) . '"/><text class="chart-y" x="' . ($pl - 6) . '" y="' . round($gy + 3, 1) . '">' . e($fmt($max * (4 - $g) / 4)) . '</text>';}
-        $step = max(1, (int)ceil($n / 8));
-        foreach ($labels as $i => $l) {
-            if ($i % $step === 0 || $i === $n - 1) {
-                $svg .= '<text class="chart-x" x="' . round($x($i), 1) . '" y="' . ($h - 8) . '">' . e($l) . '</text>';}}
+            $gy = $h * $g / 4;
+            $svg .= '<line class="chart-grid" x1="0" x2="' . $w . '" y1="' . $gy . '" y2="' . $gy . '"/>';
+            $yl .= '<span style="top:' . ($g * 25) . '%">' . e($fmt($max * (4 - $g) / 4)) . '</span>';}
         foreach ($series as $k => $s) {
             $c = $s['color'] ?? 'var(--accent)';
             $pts = [];
@@ -55,19 +51,26 @@ class Charts {
             if (!$pts) {
                 continue;}
             if (!empty($s['area'])) {
-                $svg .= '<path d="M' . $pl . ',' . ($h - $pb) . ' L' . implode(' L', $pts) . ' L' . round($x(count($pts) - 1), 1) . ',' . ($h - $pb) . ' Z" fill="url(#' . $id . 'g' . $k . ')"/>';}
+                $svg .= '<path d="M0,' . $h . ' L' . implode(' L', $pts) . ' L' . round($x(count($pts) - 1), 1) . ',' . $h . ' Z" fill="url(#' . $id . 'g' . $k . ')"/>';}
             $svg .= '<polyline points="' . implode(' ', $pts) . '" fill="none" stroke="' . $c . '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"' . (!empty($s['dashed']) ? ' stroke-dasharray="5 5"' : '') . '/>';}
-        // Hover targets with native tooltips.
+        $tipFn = $opt['tip'] ?? fn($v) => $v;
+        $bw = $w / max(1, $n - 1);
         foreach ($labels as $i => $l) {
             $tip = $l;
             foreach ($series as $s) {
-                $tip .= ' · ' . ($s['name'] ?? '') . ': ' . ($opt['tip'] ?? fn($v) => $v)($s['data'][$i] ?? 0);}
-            $bw = ($w - $pl - $pr) / max(1, $n - 1);
-            $svg .= '<rect class="chart-hit" x="' . round($x($i) - $bw / 2, 1) . '" y="' . $pt . '" width="' . round($bw, 1) . '" height="' . ($h - $pt - $pb) . '"><title>' . e($tip) . '</title></rect>';}
+                $tip .= ' · ' . ($s['name'] ?? '') . ': ' . $tipFn($s['data'][$i] ?? 0);}
+            $svg .= '<rect class="chart-hit" x="' . round($x($i) - $bw / 2, 1) . '" y="0" width="' . round($bw, 1) . '" height="' . $h . '"><title>' . e($tip) . '</title></rect>';}
+        $xl = '';
+        $step = max(1, (int)ceil($n / 7));
+        foreach ($labels as $i => $l) {
+            $last = $i === $n - 1;
+            if ($last || ($i % $step === 0 && $n - 1 - $i >= $step * .7)) {
+                $pos = $n === 1 ? 50 : $i / ($n - 1) * 100;
+                $xl .= '<span class="' . ($i === 0 ? 'first' : ($last ? 'last' : '')) . '" style="left:' . round($pos, 2) . '%">' . e($l) . '</span>';}}
         $legend = '';
         if (count($series) > 1 || !empty($opt['legend'])) {
             $legend = '<div class="legend">' . implode('', array_map(fn($s) => '<span><i style="background:' . ($s['color'] ?? 'var(--accent)') . '"></i>' . e($s['name'] ?? '') . '</span>', $series)) . '</div>';}
-        return '<div class="chart-wrap">' . $svg . '</svg>' . $legend . '</div>';}
+        return '<div class="chart-wrap"><div class="chart-box" style="--ch:' . $height . 'px"><div class="chart-yl">' . $yl . '</div><div class="chart-plot">' . $svg . '</svg><div class="chart-xl">' . $xl . '</div></div></div>' . $legend . '</div>';}
 
     /** Tiny sparkline for KPI cards. */
     public static function spark(array $data, string $color = 'var(--accent)'): string {

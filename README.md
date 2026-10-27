@@ -66,7 +66,7 @@ PHP 8.0+ with `pdo_mysql`, `openssl`, `mbstring`, `fileinfo`, `dom` (plus `curl`
 4. Add the cron job shown in **Admin → System & updates** (every 5 minutes):
    `*/5 * * * * php /home/USER/public_html/cron.php >/dev/null 2>&1`
    No cron? Built-in "web cron" runs tasks after page views, or ping the secret URL shown on the System page.
-5. Configure **Settings → Email delivery** (SMTP recommended) and send a test from an email template.
+5. Configure **Settings → Email delivery**: pick a provider (Brevo, Mailjet, SendGrid, Mailgun, Postmark, SES, Zoho, Gmail, Microsoft 365, Hostinger, cPanel…), paste the API key or SMTP login, and send a test. See [docs/EMAIL.md](docs/EMAIL.md).
 
 CLI alternative: `php tools/install.php --url=https://learn.example.com --db-name=zeroes --db-user=u --db-pass=p --admin-email=you@example.com --admin-pass=Secret123 --demo`
 
@@ -81,6 +81,10 @@ location /protected-videos/ { internal; alias /path/to/zeroes/storage/videos/; }
 ```
 
 If URL rewriting is unavailable set `APP_PRETTY_URLS="false"` in `.env` (URLs become `/index.php/...`).
+
+## Email
+
+Until a provider is chosen, Zeroes runs in **Log only** mode (emails are written to `storage/logs/mail-*.log`, nothing is delivered). **Admin → Settings → Email delivery** walks you through it in four steps: choose a provider from built-in presets, paste the credentials (API key — recommended, works even when the host blocks mail ports — or SMTP login; server, port and encryption are pre-filled), set the sender, and send a test before saving. Built-in API drivers: Brevo, Mailjet, SendGrid, Mailgun (US/EU) and Postmark. Full guide with per-provider steps, SPF/DKIM/DMARC and troubleshooting: [docs/EMAIL.md](docs/EMAIL.md).
 
 ## Updates via GitHub
 

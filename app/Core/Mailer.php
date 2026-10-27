@@ -2,7 +2,7 @@
 namespace App\Core;
 
 /**
- * Email service with a DB queue. Drivers: smtp, mail (PHP mail()), log (writes to storage/logs).
+ * Email service with a DB queue. Drivers: smtp, api (Brevo, Mailjet, SendGrid, Mailgun, Postmark), mail (PHP mail()), log (writes to storage/logs).
  * Templates live in the email_templates table and support {{placeholders}}.
  */
 class Mailer {
@@ -16,7 +16,9 @@ class Mailer {
             'port' => (int)(Settings::get('smtp_host') ? Settings::get('smtp_port', 587) : Env::get('SMTP_PORT', 587)),
             'user' => Settings::get('smtp_host') ? Settings::get('smtp_user', '') : Env::get('SMTP_USER', ''),
             'pass' => Settings::get('smtp_host') ? Crypto::decrypt(Settings::get('smtp_pass', '')) : Env::get('SMTP_PASS', ''),
-            'secure' => Settings::get('smtp_host') ? Settings::get('smtp_secure', 'tls') : Env::get('SMTP_SECURE', 'tls'),];}
+            'secure' => Settings::get('smtp_host') ? Settings::get('smtp_secure', 'tls') : Env::get('SMTP_SECURE', 'tls'),
+            'provider' => (string)Settings::get('mail_provider', ''), 'api_key' => Crypto::decrypt((string)Settings::get('mail_api_key', '')), 'api_secret' => Crypto::decrypt((string)Settings::get('mail_api_secret', '')),
+            'mailgun_domain' => (string)Settings::get('mailgun_domain', ''), 'mailgun_region' => (string)Settings::get('mailgun_region', 'us'),];}
 
     /** Queue a templated email. */
     public static function queueTemplate(string $key, string $toEmail, string $toName, array $vars = [], int $delaySeconds = 0): bool {
@@ -73,14 +75,18 @@ class Mailer {
             fclose($fh);}
         return $sent;}
 
-    public static function sendNow(string $to, string $toName, string $subject, string $html): void {
-        $c = self::config();
+    /** Send immediately. $cfg overrides the saved configuration (used by "Send a test" before saving). */
+    public static function sendNow(string $to, string $toName, string $subject, string $html, ?array $cfg = null): void {
+        $c = $cfg ?? self::config();
         $text = trim(html_entity_decode(strip_tags(preg_replace(['/<br\s*\/?>/i', '/<\/(p|h\d|li|div|tr)>/i', '/<a [^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/i'], ["\n", "\n\n", '$2 ($1)'], $html)), ENT_QUOTES, 'UTF-8'));
         $text = preg_replace("/\n{3,}/", "\n\n", preg_replace('/[ \t]+/', ' ', $text));
         $headers = ['List-Unsubscribe' => '<mailto:' . $c['from'] . '>'];
         switch ($c['driver']) {
             case 'smtp':
                 (new Smtp($c))->send($c['from'], $c['from_name'], $to, $subject, $html, $text, $headers);
+                break;
+            case 'api':
+                self::sendApi($c, $to, $toName, $subject, $html, $text);
                 break;
             case 'mail':
                 $mime = self::buildMime($c['from'], $c['from_name'], $to, $subject, $html, $text, $headers, true);
@@ -91,6 +97,68 @@ class Mailer {
                 break;
             default:
                 Logger::write('mail', 'info', "To: $to | Subject: $subject\n$text\n" . str_repeat('-', 40));}}
+
+    /** HTTP API delivery for providers that offer one (more reliable than SMTP on shared hosts that block mail ports). */
+    public static function sendApi(array $c, string $to, string $toName, string $subject, string $html, string $text): void {
+        $key = (string)($c['api_key'] ?? '');
+        if ($key === '') {
+            throw new \RuntimeException('API key is missing. Add it in Settings → Email delivery.');}
+        $from = ['email' => $c['from'], 'name' => $c['from_name']];
+        switch ($c['provider']) {
+            case 'brevo':
+                $body = ['sender' => $from, 'to' => [['email' => $to, 'name' => $toName ?: $to]], 'subject' => $subject, 'htmlContent' => $html, 'textContent' => $text];
+                self::http('https://api.brevo.com/v3/smtp/email', ['api-key: ' . $key, 'Content-Type: application/json', 'Accept: application/json'], json_encode($body));
+                return;
+            case 'mailjet':
+                if (($c['api_secret'] ?? '') === '') {
+                    throw new \RuntimeException('Mailjet needs both the API key and the Secret key.');}
+                $body = ['Messages' => [['From' => ['Email' => $c['from'], 'Name' => $c['from_name']], 'To' => [['Email' => $to, 'Name' => $toName ?: $to]], 'Subject' => $subject, 'TextPart' => $text, 'HTMLPart' => $html]]];
+                self::http('https://api.mailjet.com/v3.1/send', ['Content-Type: application/json'], json_encode($body), $key . ':' . $c['api_secret']);
+                return;
+            case 'sendgrid':
+                $body = ['personalizations' => [['to' => [['email' => $to, 'name' => $toName ?: $to]]]], 'from' => $from, 'subject' => $subject, 'content' => [['type' => 'text/plain', 'value' => $text ?: ' '], ['type' => 'text/html', 'value' => $html]]];
+                self::http('https://api.sendgrid.com/v3/mail/send', ['Authorization: Bearer ' . $key, 'Content-Type: application/json'], json_encode($body));
+                return;
+            case 'mailgun':
+                $domain = trim((string)($c['mailgun_domain'] ?? ''));
+                if ($domain === '') {
+                    throw new \RuntimeException('Mailgun needs your sending domain (e.g. mg.yourdomain.com).');}
+                $base = ($c['mailgun_region'] ?? 'us') === 'eu' ? 'https://api.eu.mailgun.net' : 'https://api.mailgun.net';
+                $body = http_build_query(['from' => ($c['from_name'] ? '"' . str_replace('"', '', $c['from_name']) . '" ' : '') . '<' . $c['from'] . '>', 'to' => $toName ? '"' . str_replace('"', '', $toName) . '" <' . $to . '>' : $to, 'subject' => $subject, 'text' => $text, 'html' => $html]);
+                self::http($base . '/v3/' . rawurlencode($domain) . '/messages', ['Content-Type: application/x-www-form-urlencoded'], $body, 'api:' . $key);
+                return;
+            case 'postmark':
+                $body = ['From' => ($c['from_name'] ? '"' . str_replace('"', '', $c['from_name']) . '" ' : '') . '<' . $c['from'] . '>', 'To' => $to, 'Subject' => $subject, 'HtmlBody' => $html, 'TextBody' => $text, 'MessageStream' => 'outbound'];
+                self::http('https://api.postmarkapp.com/email', ['X-Postmark-Server-Token: ' . $key, 'Content-Type: application/json', 'Accept: application/json'], json_encode($body));
+                return;}
+        throw new \RuntimeException('The selected provider does not support API sending. Choose SMTP instead.');}
+
+    /** POST helper for API drivers; throws with the provider's own error message. */
+    private static function http(string $url, array $headers, string $body, ?string $basicAuth = null): void {
+        if (!function_exists('curl_init')) {
+            throw new \RuntimeException('The PHP cURL extension is required for API sending.');}
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_HTTPHEADER => $headers, CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 10, CURLOPT_TIMEOUT => 25, CURLOPT_SSL_VERIFYPEER => true]);
+        if ($basicAuth !== null) {
+            curl_setopt($ch, CURLOPT_USERPWD, $basicAuth);}
+        $res = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($res === false) {
+            throw new \RuntimeException('Could not reach the email provider: ' . ($err ?: 'network error'));}
+        if ($code >= 200 && $code < 300) {
+            return;}
+        $msg = '';
+        $j = json_decode((string)$res, true);
+        if (is_array($j)) {
+            $msg = $j['message'] ?? $j['Message'] ?? $j['ErrorMessage'] ?? ($j['errors'][0]['message'] ?? '') ?: ($j['Messages'][0]['Errors'][0]['ErrorMessage'] ?? '');
+            if (!$msg && isset($j['ErrorInfo'])) {
+                $msg = (string)$j['ErrorInfo'];}}
+        if ($msg === '') {
+            $msg = trim(strip_tags(substr((string)$res, 0, 300)));}
+        $hint = in_array($code, [401, 403], true) ? ' (check the API key and that your sender is verified)' : '';
+        throw new \RuntimeException('Provider returned HTTP ' . $code . ': ' . ($msg ?: 'unknown error') . $hint);}
 
     public static function encodeHeader(string $s): string {
         return preg_match('/[^\x20-\x7e]/', $s) ? '=?UTF-8?B?' . base64_encode($s) . '?=' : $s;}
