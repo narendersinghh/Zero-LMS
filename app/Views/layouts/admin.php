@@ -4,9 +4,9 @@ use App\Core\Theme;
 $u = auth();
 $groups = [
     'Overview' => [['Dashboard', '/admin', 'grid', 'admin.access'], ['Reports', '/admin/reports', 'chart', 'reports.view']],
-    'Content' => [['Courses', '/admin/courses', 'book', 'courses.manage'], ['Videos', '/admin/videos', 'video', 'videos.manage']],
+    'Content' => [['Courses & videos', '/admin/courses', 'book', 'courses.manage']],
     'People' => [['Students', '/admin/students', 'users', 'students.manage'], ['Enrollments', '/admin/enrollments', 'layers', 'enrollments.manage'], ['Orders', '/admin/orders', 'key', 'orders.manage'], ['CSV import', '/admin/import', 'upload', 'imports.run'], ['Team', '/admin/team', 'shield', 'admins.manage']],
-    'Configure' => [['Email templates', '/admin/emails', 'mail', 'emails.manage'], ['Settings', '/admin/settings', 'settings', 'branding.manage'], ['Audit log', '/admin/logs', 'activity', 'logs.view'], ['System & updates', '/admin/system', 'package', 'settings.system']],];
+    'Configure' => [['Email templates', '/admin/emails', 'mail', 'emails.manage'], ['Settings', '/admin/settings', 'settings', 'branding.manage'], ['Modules', '/admin/modules', 'package', 'modules.manage'], ['Audit log', '/admin/logs', 'activity', 'logs.view'], ['System & updates', '/admin/system', 'refresh', 'settings.system']],];
 $extra = Hooks::filter('admin.nav', []);
 $badges = ['/admin/orders' => can('orders.manage') ? (int)\App\Core\DB::val("SELECT COUNT(*) FROM {orders} WHERE status = 'submitted'") : 0];
 usort($extra, fn($a, $b) => ($a['order'] ?? 50) <=> ($b['order'] ?? 50));
@@ -22,7 +22,7 @@ foreach ($extra as $x) {
 <nav class="sidenav" aria-label="Admin">
 <?php foreach ($groups as $g => $items): $vis = array_filter($items, fn($i) => can($i[3])); if (!$vis) continue; ?>
 <div class="sidenav-group"><span class="sidenav-label"><?= e($g) ?></span>
-<?php foreach ($vis as $i): $active = $i[1] === '/admin' ? is_path('/admin') && app()->request()->path() === '/admin' : is_path($i[1]); ?>
+<?php foreach ($vis as $i): $active = $i[1] === '/admin' ? app()->request()->path() === '/admin' : (is_path($i[1]) || ($i[1] === '/admin/courses' && (is_path('/admin/videos') || is_path('/admin/lessons')))); ?>
 <a href="<?= e(url($i[1])) ?>" class="<?= $active ? 'active' : '' ?>"><?= icon($i[2]) ?><span><?= e($i[0]) ?></span><?php if (!empty($badges[$i[1]])): ?><span class="count"><?= (int)$badges[$i[1]] ?></span><?php endif; ?></a>
 <?php endforeach; ?></div>
 <?php endforeach; ?>

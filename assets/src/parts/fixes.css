@@ -1,0 +1,7 @@
+/* Alignment fixes */
+.check{align-items:center}.check input{margin-top:0}.check:has(small),.check.top{align-items:flex-start}.check:has(small) input,.check.top input{margin-top:.22rem}
+.bulkbar .check{white-space:nowrap;font-size:.86rem}
+.table td.right{white-space:nowrap}.table td.right>*{vertical-align:middle}.table td.right>*+*{margin-left:.45rem}.table td.right>form{display:inline-block}
+.actions{display:flex;align-items:center;justify-content:flex-end;gap:.5rem;flex-wrap:wrap}
+.card-head .actions{margin-left:auto}
+.kpi-ico{background:var(--surface-2);color:var(--text)}.kpi-ico[style]{color:var(--ink)}

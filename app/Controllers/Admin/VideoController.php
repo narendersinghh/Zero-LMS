@@ -27,9 +27,14 @@ class VideoController extends Controller {
         $ws = implode(' AND ', $w);
         $pg = new Paginator((int)DB::val("SELECT COUNT(*) FROM {videos} v WHERE $ws", $p), 30);
         $videos = DB::all("SELECT v.*, (SELECT COUNT(*) FROM {lessons} l WHERE l.video_id = v.id) AS used FROM {videos} v WHERE $ws ORDER BY v.id DESC" . $pg->limitSql(), $p);
+        $ids = array_column($videos, 'id');
+        $usedIn = [];
+        if ($ids) {
+            foreach (DB::all('SELECT l.id, l.title, l.video_id, c.title AS course_title FROM {lessons} l JOIN {courses} c ON c.id = l.course_id WHERE l.video_id IN (' . DB::in($ids) . ') ORDER BY c.title, l.sort_order', $ids) as $l) {
+                $usedIn[$l['video_id']][] = $l;}}
         $incoming = array_map('basename', array_filter(glob(Media::DIR . '/incoming/*') ?: [], 'is_file'));
         $disk = (int)DB::val("SELECT COALESCE(SUM(size), 0) FROM {videos} WHERE provider = 'local'");
-        return view('admin/videos/index', ['videos' => $videos, 'pg' => $pg, 'q' => $q, 'provider' => $prov, 'incoming' => $incoming, 'disk' => $disk, 'maxChunk' => min(8 * 1048576, (int)(Uploads::maxUploadBytes() * 0.9))]);}
+        return view('admin/videos/index', ['usedIn' => $usedIn, 'videos' => $videos, 'pg' => $pg, 'q' => $q, 'provider' => $prov, 'incoming' => $incoming, 'disk' => $disk, 'maxChunk' => min(8 * 1048576, (int)(Uploads::maxUploadBytes() * 0.9))]);}
 
     public function search() {
         $q = $this->req->str('q');

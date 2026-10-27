@@ -133,6 +133,11 @@ $r->group('/admin', ['auth', 'staff', 'can:admin.access'], function ($r) {
 
     $r->get('/settings', function () {
         redirect('/admin/settings/general');});
+    $r->get('/settings/mail', 'Admin\MailSettingsController@show', ['can:mail.configure']);
+    $r->post('/settings/mail', 'Admin\MailSettingsController@save', ['can:mail.configure']);
+    $r->post('/settings/mail/test', 'Admin\MailSettingsController@test', ['can:mail.configure']);
+    $r->get('/modules', 'Admin\ModulesController@index', ['can:modules.manage']);
+    $r->post('/modules', 'Admin\ModulesController@save', ['can:modules.manage']);
     $r->get('/settings/{tab}', 'Admin\SettingsController@show', ['can:branding.manage']);
     $r->post('/settings/{tab}', 'Admin\SettingsController@save', ['can:branding.manage']);
     $r->get('/logs', 'Admin\LogController@index', ['can:logs.view']);

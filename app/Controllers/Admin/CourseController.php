@@ -25,9 +25,11 @@ class CourseController extends Controller {
             $where[] = "c.status <> 'archived'";}
         $w = implode(' AND ', $where);
         $pg = new Paginator((int)DB::val("SELECT COUNT(*) FROM {courses} c WHERE $w", $p), 24);
-        $courses = DB::all("SELECT c.*, (SELECT COUNT(*) FROM {lessons} l WHERE l.course_id = c.id) AS lesson_count, (SELECT COUNT(*) FROM {enrollments} e WHERE e.course_id = c.id) AS enrolled FROM {courses} c WHERE $w ORDER BY c.sort_order, c.id DESC" . $pg->limitSql(), $p);
+        $courses = DB::all("SELECT c.*, (SELECT COUNT(*) FROM {lessons} l WHERE l.course_id = c.id) AS lesson_count, (SELECT COUNT(*) FROM {enrollments} e WHERE e.course_id = c.id) AS enrolled, (SELECT COUNT(*) FROM {enrollments} e WHERE e.course_id = c.id AND e.completed_at IS NOT NULL) AS completed,
+            (SELECT COALESCE(SUM(o.amount), 0) FROM {orders} o WHERE o.course_id = c.id AND o.status = 'paid') AS revenue, (SELECT COUNT(*) FROM {modules} m WHERE m.course_id = c.id) AS module_count FROM {courses} c WHERE $w ORDER BY c.sort_order, c.id DESC" . $pg->limitSql(), $p);
         $counts = DB::pairs('SELECT status, COUNT(*) FROM {courses} GROUP BY status');
-        return view('admin/courses/index', ['courses' => $courses, 'pg' => $pg, 'q' => $q, 'status' => $status, 'counts' => $counts]);}
+        $videoCount = (int)DB::val('SELECT COUNT(*) FROM {videos}');
+        return view('admin/courses/index', ['courses' => $courses, 'pg' => $pg, 'q' => $q, 'status' => $status, 'counts' => $counts, 'videoCount' => $videoCount]);}
 
     public function create() {
         return view('admin/courses/form', ['course' => ['id' => 0, 'title' => '', 'slug' => '', 'subtitle' => '', 'description' => '', 'cover_image' => '', 'category' => '', 'instructor_name' => '', 'status' => 'draft', 'start_date' => '', 'end_date' => '', 'access_days' => '', 'release_time' => '00:00:00', 'quotes' => '', 'sort_order' => 0]]);}
