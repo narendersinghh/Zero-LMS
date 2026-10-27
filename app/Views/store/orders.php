@@ -4,8 +4,8 @@ $layout = 'app';
 $title = 'Orders & payments';
 $cls = ['paid' => 'success', 'submitted' => 'info', 'pending' => 'warning', 'rejected' => 'danger'];
 ?>
-<div class="page-head"><div><h1>Orders & payments</h1><p class="muted">Your purchases and their status.</p></div><a class="btn btn-ghost" href="<?= e(url('/explore')) ?>"><?= icon('search') ?>Explore courses</a></div>
-<?php if (!$rows): ?><?php partial('empty', ['illus' => 'empty', 'heading' => 'No orders yet', 'text' => 'Courses you buy will appear here with their receipts.', 'action' => '<a class="btn btn-primary" href="' . e(url('/explore')) . '">Browse courses</a>']); ?>
+<div class="page-head"><div><h1>Orders & payments</h1><p class="muted">Your purchases and their status.</p></div><a class="btn btn-ghost" href="<?= e(url(setting('store_enabled') ? '/store' : '/courses')) ?>"><?= icon('search') ?>Explore courses</a></div>
+<?php if (!$rows): ?><?php partial('empty', ['illus' => 'empty', 'heading' => 'No orders yet', 'text' => 'Courses you buy will appear here with their receipts.', 'action' => '<a class="btn btn-primary" href="' . e(url(setting('store_enabled') ? '/store' : '/courses')) . '">Browse courses</a>']); ?>
 <?php else: ?>
 <div class="order-list">
 <?php foreach ($rows as $r): ?>

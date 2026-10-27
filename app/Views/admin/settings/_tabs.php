@@ -1,19 +1,15 @@
 <?php
-/** Settings hub shell: opens the two-column layout (closed by _end.php). Each settings view includes both. */
+/** Settings hub shell: opens the two-column layout (closed by _end.php). Settings views, email templates, team and audit log include both. */
 $hub = [
-    'Workspace' => [['general', 'General', 'settings', 'Name, timezone, sign-in text'], ['branding', 'Branding & theme', 'palette', 'Logo, colors, fonts'], ['learning', 'Learning', 'sparkles', 'Notifications, quotes']],
-    'Delivery' => [['mail', 'Email delivery', 'mail', 'SMTP or API provider'], ['payments', 'Payments', 'key', 'UPI, gateways, sign-up'], ['video', 'Video security', 'shield', 'Playback & streaming']],];
-$more = [['/admin/emails', 'Email templates', 'file', 'emails.manage'], ['/admin/team', 'Team & roles', 'users', 'admins.manage'], ['/admin/logs', 'Audit log', 'activity', 'logs.view']];
+    'Workspace' => [['general', 'General', 'settings', '/admin/settings/general', 'branding.manage'], ['branding', 'Branding & theme', 'palette', '/admin/settings/branding', 'branding.manage'], ['learning', 'Learning', 'sparkles', '/admin/settings/learning', 'branding.manage'], ['store', 'Store', 'grid', '/admin/settings/store', 'branding.manage']],
+    'Delivery' => [['mail', 'Email delivery', 'mail', '/admin/settings/mail', 'mail.configure'], ['emails', 'Email templates', 'file', '/admin/emails', 'emails.manage'], ['payments', 'Payments', 'key', '/admin/settings/payments', 'payments.configure'], ['video', 'Video security', 'shield', '/admin/settings/video', 'branding.manage']],
+    'Admin' => [['team', 'Team & roles', 'users', '/admin/team', 'admins.manage'], ['logs', 'Audit log', 'activity', '/admin/logs', 'logs.view']],];
 ?>
 <div class="settings-shell">
 <nav class="settings-nav" aria-label="Settings sections">
-<?php foreach ($hub as $g => $items): ?>
+<?php foreach ($hub as $g => $items): $items = array_filter($items, fn($i) => can($i[4])); if (!$items) continue; ?>
 <span class="settings-label"><?= e($g) ?></span>
-<?php foreach ($items as [$k, $label, $ic, $desc]): if (($k === 'mail' && !can('mail.configure')) || ($k === 'payments' && !can('payments.configure'))) continue; ?>
-<a class="<?= $tab === $k ? 'active' : '' ?>" href="<?= e(url('/admin/settings/' . $k)) ?>"><span class="sn-ico"><?= icon($ic) ?></span><span><b><?= e($label) ?></b><small><?= e($desc) ?></small></span></a>
+<?php foreach ($items as [$k, $label, $ic, $href]): ?><a class="<?= ($tab ?? '') === $k ? 'active' : '' ?>" href="<?= e(url($href)) ?>"><span class="sn-ico"><?= icon($ic) ?></span><b><?= e($label) ?></b></a><?php endforeach; ?>
 <?php endforeach; ?>
-<?php endforeach; ?>
-<span class="settings-label">More</span>
-<?php foreach ($more as [$h, $label, $ic, $perm]): if (!can($perm)) continue; ?><a href="<?= e(url($h)) ?>"><span class="sn-ico"><?= icon($ic) ?></span><span><b><?= e($label) ?></b></span><?= icon('chevron-right', 'sn-go') ?></a><?php endforeach; ?>
 </nav>
 <div class="settings-body">

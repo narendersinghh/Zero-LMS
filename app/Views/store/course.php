@@ -6,6 +6,7 @@ $cur = $price['currency'];
 ?>
 <section class="sales-hero tint-<?= e(course_tint($course)) ?>">
 <div class="sales-copy">
+<?php if (setting('store_enabled')): ?><a class="back-link" href="<?= e(url('/store')) ?>"><?= icon('arrow-left') ?>All courses</a><?php endif; ?>
 <?php if ($course['category']): ?><span class="pill pill-dark"><?= e($course['category']) ?></span><?php endif; ?>
 <h1><?= e($course['title']) ?></h1>
 <?php if ($course['subtitle']): ?><p class="lead"><?= e($course['subtitle']) ?></p><?php endif; ?>

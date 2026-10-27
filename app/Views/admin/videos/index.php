@@ -29,7 +29,7 @@ include \App\Core\View::find('admin/courses/_tabs');
 <?php foreach ($videos as $v): ?>
 <tr>
 <?php $ext = $v['provider'] !== 'local'; $link = $v['provider'] === 'youtube' ? 'https://youtu.be/' . $v['source'] : ($v['provider'] === 'vimeo' ? 'https://vimeo.com/' . $v['source'] : $v['source']); $dur = (int)$v['duration']; ?>
-<td><div class="vid-title"><span class="vid-thumb"<?= $v['provider'] === 'youtube' ? ' style="background-image:url(\'https://i.ytimg.com/vi/' . e(\App\Core\Media::youtubeId($v['source'])) . '/default.jpg\')"' : '' ?>><?= icon('play') ?></span><span class="grow"><b><?= e($v['title']) ?></b><?php if ($ext): ?><small class="muted mono-wrap"><?= e(str_limit($link, 48)) ?></small><?php endif; ?></span></div></td>
+<td><div class="vid-title"><span class="vid-thumb"<?= $v['provider'] === 'youtube' ? ' style="background-image:url(\'https://i.ytimg.com/vi/' . e(\App\Core\Media::youtubeId($v['source'])) . '/mqdefault.jpg\')"' : '' ?>><?= icon('play') ?></span><span class="grow"><b><?= e($v['title']) ?></b><?php if ($ext): ?><small class="muted mono-wrap"><?= e(str_limit($link, 48)) ?></small><?php endif; ?></span></div></td>
 <td><span class="badge badge-<?= $v['provider'] === 'local' ? 'accent' : 'muted' ?>"><?= e(VideoController::PROVIDERS[$v['provider']] ?? $v['provider']) ?></span></td>
 <td><?= $v['duration'] ? e(human_duration($v['duration'])) : '<span class="muted">-</span>' ?></td>
 <td class="nowrap"><?= $v['size'] ? e(human_size($v['size'])) : '<span class="muted">-</span>' ?></td>

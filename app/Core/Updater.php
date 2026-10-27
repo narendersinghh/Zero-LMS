@@ -64,7 +64,8 @@ class Updater {
                     $zip = (string)$a['url'];
                     $accept = 'application/octet-stream';
                     break;}}
-            $info = ['channel' => 'release', 'current' => $current, 'latest' => $latest, 'available' => $latest !== '' && version_compare($latest, $current, '>'),
+            // GitHub's "latest release" is the newest published one, so any different version is an update (this also covers the renumbering to 1.0.0).
+            $info = ['channel' => 'release', 'current' => $current, 'latest' => $latest, 'available' => $latest !== '' && version_compare($latest, $current, '!='),
                 'notes' => (string)($r['body'] ?? ''), 'published_at' => (string)($r['published_at'] ?? ''), 'zip' => $zip, 'ref' => (string)($r['tag_name'] ?? ''), 'accept' => $accept];}
         Settings::set(['update_last_check' => now(), 'update_last_result' => array_diff_key($info, ['zip' => 1, 'accept' => 1])]);
         return $info;}

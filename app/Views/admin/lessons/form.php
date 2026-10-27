@@ -10,6 +10,7 @@ if (!$isNew) {
     $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/courses/' . $course['slug'] . '/lessons/' . $lesson['id'])) . '" target="_blank" rel="noopener">' . icon('eye') . 'Preview</a>';}
 $dur = (int)$v('duration');
 ?>
+<?php $sub = 'curriculum'; include \App\Core\View::find('admin/courses/_subnav'); ?>
 <form method="post" action="<?= e(url($isNew ? '/admin/courses/' . $course['id'] . '/lessons' : '/admin/lessons/' . $lesson['id'])) ?>" class="form-layout" data-loading>
 <?= csrf_field() ?>
 <div class="stack-lg">

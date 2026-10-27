@@ -35,7 +35,7 @@ $shareUrl = $share ? url('/c/' . $share['slug'], [], true) : '';
 <?php if ($shareUrl): ?><button type="button" class="btn btn-ghost" data-copy="<?= e($shareUrl) ?>" title="<?= e($share['title']) ?>"><?= icon('copy') ?>Copy course link</button><?php endif; ?>
 </div>
 </div>
-<div class="ad-hero-art"><?= illus('hero-learner') ?></div>
+<div class="ad-hero-art"><?= illus('hero-learner', '', '', false) ?></div>
 </section>
 
 <section class="ad-kpis">
@@ -62,7 +62,7 @@ $shareUrl = $share ? url('/c/' . $share['slug'], [], true) : '';
 <div class="ad-courses">
 <?php foreach ($top as $c): $avg = $c['enrolled'] && $c['lesson_count'] ? min(100, (int)round($c['done_lessons'] / ($c['enrolled'] * $c['lesson_count']) * 100)) : 0; ?>
 <a class="ad-course" href="<?= e(url(can('reports.view') ? '/admin/reports/courses/' . $c['id'] : '/admin/courses/' . $c['id'] . '/edit')) ?>">
-<span class="ad-thumb"><?= course_visual($c) ?></span>
+<span class="ad-thumb"><?= course_visual($c, '', 160) ?></span>
 <span class="grow"><b><?= e($c['title']) ?></b><small class="muted"><?= (int)$c['enrolled'] ?> enrolled · <?= (int)$c['completed'] ?> finished<?= $c['status'] !== 'published' ? ' · ' . e($c['status']) : '' ?></small><span class="progress"><i style="width:<?= $avg ?>%"></i></span></span>
 <span class="ad-pct"><?= $avg ?>%<small>avg progress</small></span>
 </a>

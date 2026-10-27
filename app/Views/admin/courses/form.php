@@ -8,7 +8,7 @@ $v = fn($k) => old($k, $course[$k] ?? '');
 if (!$isNew) {
     $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/courses/' . $course['slug'])) . '" target="_blank" rel="noopener">' . icon('eye') . 'Preview</a><a class="btn btn-ghost btn-sm" href="' . e(url('/admin/courses/' . $course['id'] . '/curriculum')) . '">' . icon('layers') . 'Curriculum</a>';}
 ?>
-<?php if (!$isNew): ?><div class="subnav"><a class="active" href="<?= e(url('/admin/courses/' . $course['id'] . '/edit')) ?>">Details & schedule</a><a href="<?= e(url('/admin/courses/' . $course['id'] . '/curriculum')) ?>">Curriculum</a><a href="<?= e(url('/admin/enrollments', ['course' => $course['id']])) ?>">Enrollments</a><a href="<?= e(url('/admin/reports/courses/' . $course['id'])) ?>">Report</a><?php foreach (\App\Core\Hooks::filter('admin.course_tabs', [], $course) as $tl => $tu): ?><a href="<?= e(url($tu)) ?>"><?= e($tl) ?></a><?php endforeach; ?></div><?php endif; ?>
+<?php if (!$isNew): $sub = 'details'; include \App\Core\View::find('admin/courses/_subnav'); endif; ?>
 <form method="post" action="<?= e(url($isNew ? '/admin/courses' : '/admin/courses/' . $course['id'])) ?>" enctype="multipart/form-data" class="form-layout" data-loading>
 <?= csrf_field() ?>
 <div class="stack-lg">

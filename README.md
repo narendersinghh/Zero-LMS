@@ -96,7 +96,7 @@ Until a provider is chosen, Zeroes runs in **Log only** mode (emails are written
 
 Any backup can be restored from the same page (code only; database migrations are not reverted).
 
-**Publishing a release:** bump nothing manually, push a tag, e.g. `git tag v1.1.0 && git push origin v1.1.0`. The included GitHub Action lints, builds minified assets, stamps `version.json` and attaches `zeroes-v1.1.0.zip` to the release.
+**Publishing a release:** bump nothing manually, push a tag, e.g. `git tag v1.0.0 && git push origin v1.0.0`. The included GitHub Action lints, builds minified assets, stamps `version.json` and attaches `zeroes-v1.0.0.zip` to the release.
 
 ## Development
 

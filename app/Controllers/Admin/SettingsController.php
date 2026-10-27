@@ -11,14 +11,15 @@ use App\Core\Settings;
 use App\Core\Uploads;
 
 class SettingsController extends Controller {
-    public const TABS = ['general' => ['General', 'settings'], 'branding' => ['Branding & theme', 'palette'], 'mail' => ['Email delivery', 'mail'], 'video' => ['Video security', 'shield'], 'learning' => ['Learning & notifications', 'sparkles'], 'payments' => ['Payments', 'key']];
+    public const TABS = ['general' => ['General', 'settings'], 'branding' => ['Branding & theme', 'palette'], 'mail' => ['Email delivery', 'mail'], 'video' => ['Video security', 'shield'], 'learning' => ['Learning & notifications', 'sparkles'], 'payments' => ['Payments', 'key'], 'store' => ['Store', 'grid']];
 
     public function show(string $tab) {
         if (!isset(self::TABS[$tab])) {
             abort(404);}
         if (($tab === 'mail' && !Auth::can('mail.configure')) || ($tab === 'payments' && !Auth::can('payments.configure'))) {
             abort(403);}
-        return view('admin/settings/' . $tab, ['tab' => $tab, 's' => Settings::all(), 'tabs' => self::TABS, 'timezones' => \DateTimeZone::listIdentifiers()]);}
+        $extra = $tab === 'store' ? ['courses' => \App\Core\DB::all("SELECT id, title, slug, status, is_public, price, sale_price, currency, category FROM {courses} WHERE status <> 'archived' ORDER BY sort_order, id DESC")] : [];
+        return view('admin/settings/' . $tab, $extra + ['tab' => $tab, 's' => Settings::all(), 'tabs' => self::TABS, 'timezones' => \DateTimeZone::listIdentifiers()]);}
 
     public function save(string $tab) {
         if (!isset(self::TABS[$tab])) {
@@ -89,6 +90,15 @@ class SettingsController extends Controller {
                     back();}
                 $v = ['upi_enabled' => $this->req->bool('upi_enabled'), 'upi_vpa' => $vpa, 'upi_payee_name' => mb_substr($in('upi_payee_name'), 0, 60), 'upi_instructions' => mb_substr($in('upi_instructions'), 0, 1000),
                     'upi_provisional_access' => $this->req->bool('upi_provisional_access'), 'upi_require_proof' => $this->req->bool('upi_require_proof'), 'allow_registration' => $this->req->bool('allow_registration')];
+                break;
+            case 'store':
+                $this->validate(['store_title' => 'required|max:80', 'store_subtitle' => 'max:200']);
+                $v = ['store_enabled' => $this->req->bool('store_enabled'), 'store_home' => $this->req->bool('store_home'), 'store_title' => $in('store_title'), 'store_subtitle' => $in('store_subtitle')];
+                $listed = array_map('intval', (array)$this->req->input('listed', []));
+                // Listing a course in the store is the same flag as its public sales page.
+                \App\Core\DB::run("UPDATE {courses} SET is_public = 0 WHERE status <> 'archived'");
+                if ($listed) {
+                    \App\Core\DB::run('UPDATE {courses} SET is_public = 1 WHERE id IN (' . \App\Core\DB::in($listed) . ')', $listed);}
                 break;
             case 'learning':
                 $quotes = array_values(array_filter(array_map('trim', preg_split('/\r?\n/', (string)$this->req->input('quotes', '')))));

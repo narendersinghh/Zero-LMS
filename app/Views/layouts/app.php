@@ -6,7 +6,7 @@ use App\Services\Progress;
 $u = auth();
 $uid = (int)$u['id'];
 $unread = Notifier::unreadCount($uid);
-$learn = [['label' => 'Dashboard', 'url' => '/dashboard', 'icon' => 'home'], ['label' => 'My courses', 'url' => '/courses', 'icon' => 'book'], ['label' => 'Explore', 'url' => '/explore', 'icon' => 'search']];
+$learn = [['label' => 'Dashboard', 'url' => '/dashboard', 'icon' => 'home'], ['label' => 'My courses', 'url' => '/courses', 'icon' => 'book'], ] + (setting('store_enabled') ? [['label' => 'Store', 'url' => '/store', 'icon' => 'search']] : []);
 $extra = Hooks::filter('student.nav', []);
 usort($extra, fn($a, $b) => ($a['order'] ?? 50) <=> ($b['order'] ?? 50));
 $account = [['label' => 'Orders', 'url' => '/orders', 'icon' => 'key'], ['label' => 'Notifications', 'url' => '/notifications', 'icon' => 'bell', 'count' => $unread], ['label' => 'Profile', 'url' => '/profile', 'icon' => 'user']];
@@ -64,7 +64,7 @@ $navLink = function (array $n) {
 </div>
 </div>
 <nav class="tabbar" aria-label="Mobile navigation">
-<?php foreach ([['/dashboard', 'home', 'Home'], ['/courses', 'book', 'Courses'], ['/explore', 'search', 'Explore'], ['/notifications', 'bell', 'Alerts'], ['/profile', 'user', 'Profile']] as [$h, $i, $l]): ?>
+<?php foreach ([['/dashboard', 'home', 'Home'], ['/courses', 'book', 'Courses'], ['/notifications', 'bell', 'Alerts'], ['/profile', 'user', 'Profile']] as [$h, $i, $l]): ?>
 <a href="<?= e(url($h)) ?>" class="<?= is_path($h) ? 'active' : '' ?>"><span class="tb-ico"><?= icon($i) ?></span><span><?= $l ?></span><?php if ($h === '/notifications' && $unread): ?><i class="dot-sm"></i><?php endif; ?></a>
 <?php endforeach; ?>
 </nav>

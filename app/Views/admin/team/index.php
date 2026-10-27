@@ -4,6 +4,7 @@ $layout = 'admin';
 $title = 'Team';
 $actions = '<button type="button" class="btn btn-primary btn-sm" data-modal-open="team-modal">' . icon('plus') . 'Invite team member</button>';
 ?>
+<?php $tab = 'team'; include \App\Core\View::find('admin/settings/_tabs'); ?>
 <div class="card p-0"><div class="table-wrap"><table class="table">
 <thead><tr><th>Member</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead>
 <tbody>
@@ -25,3 +26,4 @@ $actions = '<button type="button" class="btn btn-primary btn-sm" data-modal-open
 <div class="field"><label>Email</label><input type="email" name="email" required><small class="hint">Existing users with this email are promoted.</small></div>
 <div class="field"><label>Role</label><select name="role"><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select></div>
 <div class="modal-foot"><button class="btn btn-primary">Send invite</button></div></form></dialog>
+<?php include \App\Core\View::find('admin/settings/_end'); ?>

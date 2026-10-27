@@ -26,16 +26,27 @@ class StoreController extends Controller {
             abort(404, 'This course is not available.');}
         return $c;}
 
+    /** Public storefront: every published course marked "show in store". Disabled stores are visible to staff only (preview). */
     public function catalog() {
+        if (!Settings::get('store_enabled') && !Auth::isStaff()) {
+            abort(404);}
         $q = $this->req->str('q');
-        $p = [];
-        $w = "status = 'published' AND is_public = 1";
-        if ($q !== '') {
-            $w .= ' AND (title LIKE ? OR subtitle LIKE ? OR category LIKE ?)';
-            $p = [DB::like($q), DB::like($q), DB::like($q)];}
-        $courses = DB::all("SELECT c.*, (SELECT COUNT(*) FROM {lessons} l WHERE l.course_id = c.id AND l.status = 'published') AS lesson_count FROM {courses} c WHERE $w ORDER BY sort_order, id DESC", $p);
+        $cat = $this->req->str('category');
+        $sort = $this->req->str('sort', 'featured');
+        // One query: lesson count and total length per course, filtered in PHP (stores are small).
+        $all = DB::all("SELECT c.*, COUNT(l.id) AS lesson_count, COALESCE(SUM(COALESCE(NULLIF(l.duration, 0), v.duration, 0)), 0) AS total_secs FROM {courses} c LEFT JOIN {lessons} l ON l.course_id = c.id AND l.status = 'published' LEFT JOIN {videos} v ON v.id = l.video_id WHERE c.status = 'published' AND c.is_public = 1 GROUP BY c.id ORDER BY c.sort_order, c.id DESC");
+        $cats = array_values(array_unique(array_filter(array_column($all, 'category'))));
+        sort($cats);
+        $courses = array_values(array_filter($all, fn($c) => ($cat === '' || $c['category'] === $cat) && ($q === '' || stripos($c['title'] . ' ' . $c['subtitle'] . ' ' . $c['category'] . ' ' . $c['instructor_name'], $q) !== false)));
+        foreach ($courses as &$c) {
+            $c['_price'] = Payments::price($c);}
+        unset($c);
+        if ($sort === 'price_low' || $sort === 'price_high') {
+            usort($courses, fn($a, $b) => ($sort === 'price_low' ? 1 : -1) * ($a['_price']['final'] <=> $b['_price']['final']));}
+        elseif ($sort === 'new') {
+            usort($courses, fn($a, $b) => $b['id'] <=> $a['id']);}
         $mine = Auth::check() ? DB::pairs('SELECT course_id, id FROM {enrollments} WHERE user_id = ?', [Auth::id()]) : [];
-        return view('store/catalog', ['courses' => $courses, 'mine' => $mine, 'q' => $q]);}
+        return view('store/catalog', ['courses' => $courses, 'mine' => $mine, 'q' => $q, 'cats' => $cats, 'cat' => $cat, 'sort' => $sort, 'count' => count($all)]);}
 
     public function show(string $slug) {
         $course = $this->publicCourse($slug);
@@ -118,7 +129,7 @@ class StoreController extends Controller {
         $this->createAccount('register');
         Throttle::hit($key);
         flash('success', 'Welcome aboard! Your account is ready.');
-        redirect('/explore');}
+        redirect(Settings::get('store_enabled') ? '/store' : '/dashboard');}
 
     private function ownOrder(string $ref): array {
         $o = Payments::find($ref);

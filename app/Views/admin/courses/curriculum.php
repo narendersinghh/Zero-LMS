@@ -5,7 +5,7 @@ $crumbs = ['Courses' => '/admin/courses'];
 $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/courses/' . $course['slug'])) . '" target="_blank" rel="noopener">' . icon('eye') . 'Preview</a><a class="btn btn-primary btn-sm" href="' . e(url('/admin/courses/' . $course['id'] . '/lessons/create')) . '">' . icon('plus') . 'Add lesson</a>';
 $typeIcon = ['video' => 'video', 'text' => 'file', 'embed' => 'external'];
 ?>
-<div class="subnav"><a href="<?= e(url('/admin/courses/' . $course['id'] . '/edit')) ?>">Details & schedule</a><a class="active" href="<?= e(url('/admin/courses/' . $course['id'] . '/curriculum')) ?>">Curriculum</a><a href="<?= e(url('/admin/enrollments', ['course' => $course['id']])) ?>">Enrollments</a><a href="<?= e(url('/admin/reports/courses/' . $course['id'])) ?>">Report</a><?php foreach (\App\Core\Hooks::filter('admin.course_tabs', [], $course) as $tl => $tu): ?><a href="<?= e(url($tu)) ?>"><?= e($tl) ?></a><?php endforeach; ?></div>
+<?php $sub = 'curriculum'; include \App\Core\View::find('admin/courses/_subnav'); ?>
 <div class="row between wrap gap-3 mb-4">
 <p class="muted small m-0"><?= icon('info') ?> Drag lessons and modules to reorder. Lessons unlock on their <b>day</b> (counted from each student's start date), on a <b>fixed date</b>, or immediately. A module's day applies to lessons without their own.</p>
 <span class="badge badge-<?= ['published' => 'success', 'draft' => 'muted', 'archived' => 'warning'][$course['status']] ?>"><?= e(ucfirst($course['status'])) ?> · <?= (int)$lessonCount ?> lessons</span>

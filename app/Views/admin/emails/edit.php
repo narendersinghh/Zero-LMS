@@ -1,8 +1,9 @@
 <?php
 $layout = 'admin';
 $title = $t['name'];
-$crumbs = ['Email templates' => '/admin/emails'];
+$crumbs = ['Settings' => '/admin/settings', 'Email templates' => '/admin/emails'];
 ?>
+<?php $tab = 'emails'; include \App\Core\View::find('admin/settings/_tabs'); ?>
 <div class="form-layout">
 <form method="post" action="<?= e(url('/admin/emails/' . $t['key'])) ?>" class="card stack" data-loading>
 <?= csrf_field() ?>
@@ -24,3 +25,4 @@ $crumbs = ['Email templates' => '/admin/emails'];
 </div>
 </aside>
 </div>
+<?php include \App\Core\View::find('admin/settings/_end'); ?>

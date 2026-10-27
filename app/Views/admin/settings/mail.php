@@ -25,14 +25,12 @@ $hidden = fn(bool $show) => $show ? '' : ' hidden';
 <div class="mail-main">
 <div class="card mail-card">
 <div class="mc-head"><span class="mc-n">1</span><div><h3>Provider</h3><small class="muted">Brevo or Mailjet are the easiest: free plans and an API, no mail ports needed.</small></div></div>
-<div class="mp-grid" role="radiogroup" aria-label="Email provider">
-<?php foreach ($providers as $k => $p): ?>
-<label class="mp-card" title="<?= e($p['tagline']) ?>"><input type="radio" name="mail_provider" value="<?= e($k) ?>"<?= checked($k === $provider) ?>>
-<span class="mp-logo" style="--c:<?= e($p['color']) ?>"><?= e(mb_strtoupper(mb_substr($p['name'], 0, 1))) ?></span>
-<span class="mp-text"><b><?= e($p['name']) ?></b><span class="mp-chips"><?php if (in_array('api', $p['methods'], true)): ?><i>API</i><?php endif; ?><?php if (in_array('smtp', $p['methods'], true)): ?><i>SMTP</i><?php endif; ?><?php if ($k === 'log'): ?><i>Testing</i><?php endif; ?></span></span>
-</label>
-<?php endforeach; ?>
-</div>
+<?php $grp = ['Recommended: API and SMTP' => [], 'SMTP mailbox or server' => [], 'Other' => []];
+foreach ($providers as $k => $p) {
+    $grp[in_array('api', $p['methods'], true) ? 'Recommended: API and SMTP' : (in_array('smtp', $p['methods'], true) ? 'SMTP mailbox or server' : 'Other')][$k] = $p;} ?>
+<div class="mp-pick"><span class="mp-logo" data-plogo style="--c:<?= e($cur['color']) ?>"><?= e(mb_strtoupper(mb_substr($cur['name'], 0, 1))) ?></span>
+<div class="field grow"><label for="mail_provider" class="sr-only">Email provider</label><select id="mail_provider" name="mail_provider"><?php foreach ($grp as $g => $list): if (!$list) continue; ?><optgroup label="<?= e($g) ?>"><?php foreach ($list as $k => $p): ?><option value="<?= e($k) ?>" data-color="<?= e($p['color']) ?>" data-tag="<?= e($p['tagline']) ?>"<?= selected($k, $provider) ?>><?= e($p['name']) ?><?= !empty($p['aka']) ? ' (' . e($p['aka']) . ')' : '' ?></option><?php endforeach; ?></optgroup><?php endforeach; ?></select></div></div>
+<p class="small muted m-0" data-ptag><?= e($cur['tagline']) ?></p>
 <div class="note small m-0" data-nosetup<?= $hidden(!$isReal) ?>><?php foreach (['phpmail', 'log'] as $k): ?><span data-steps-for="<?= $k ?>"<?= $hidden($k === $provider) ?>><?= e($providers[$k]['steps'][0]) ?></span><?php endforeach; ?></div>
 </div>
 

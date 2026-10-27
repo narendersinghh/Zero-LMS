@@ -29,3 +29,4 @@
 @media (max-width:1200px){.mail-form{grid-template-columns:minmax(0,1fr)}.mail-side{position:static}}
 @media (max-width:760px){.mp-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.mail-card{padding:var(--s4)}.mp-method{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:380px){.mp-grid{grid-template-columns:minmax(0,1fr)}}
+.mp-pick{display:flex;align-items:center;gap:.75rem}.mp-pick .mp-logo{width:42px;height:42px;border-radius:12px}

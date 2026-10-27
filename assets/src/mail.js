@@ -6,7 +6,8 @@
   var P = JSON.parse(f.getAttribute('data-providers') || '{}');
   var q = function (s) { return f.querySelector(s); }, qa = function (s) { return Array.prototype.slice.call(f.querySelectorAll(s)); };
   var show = function (el, on) { if (el) { el.hidden = !on; } };
-  function provider() { var r = q('[name="mail_provider"]:checked'); return r ? r.value : 'log'; }
+  var sel = q('[name="mail_provider"]');
+  function provider() { return sel ? sel.value : 'log'; }
   function method(p) { var r = q('[name="mail_method"]:checked'), m = r ? r.value : 'api'; return p.m.indexOf(m) > -1 ? m : p.m[0]; }
   function sync(changedProvider) {
     var k = provider(), p = P[k]; if (!p) { return; }
@@ -33,6 +34,9 @@
     }
     t('[data-host-text]', p.h); t('[data-port-text]', (q('[name="smtp_port"]') || {}).value || p.p);
     t('[data-secure-text]', ((q('[name="smtp_secure"]') || {}).value || p.s).toUpperCase());
+    var o = sel.options[sel.selectedIndex], lg = q('[data-plogo]'), tg = q('[data-ptag]');
+    if (lg) { lg.style.setProperty('--c', o.getAttribute('data-color')); lg.textContent = p.n.charAt(0).toUpperCase(); }
+    if (tg) { tg.textContent = o.getAttribute('data-tag'); }
     qa('[data-steps-for]').forEach(function (n) { n.hidden = n.getAttribute('data-steps-for') !== k; });
   }
   f.addEventListener('change', function (e) {

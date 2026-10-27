@@ -14,6 +14,7 @@ $distMax = max(1, max(array_map('intval', array_values($dist ?: ['a' => 0]))));
 $qs = fn(array $over) => '?' . http_build_query(array_filter(array_merge(['q' => $q, 'filter' => $filter, 'sort' => $sort], $over), fn($v) => $v !== '' && $v !== null));
 $statusCls = ['published' => 'success', 'draft' => 'muted', 'archived' => 'warning'];
 ?>
+<?php $sub = 'report'; include \App\Core\View::find('admin/courses/_subnav'); ?>
 <div class="rp-page">
 <section class="card rp-hero">
 <?= course_visual($course, 'rp-hero-cv') ?>

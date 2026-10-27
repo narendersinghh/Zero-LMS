@@ -11,7 +11,7 @@ $vpa = (string)setting('upi_vpa');
 <?= illus('verify', 'state-illus') ?>
 <div><span class="pill pill-dark">Order <?= e($o['ref']) ?></span><h1 class="h2">We're verifying your payment</h1>
 <p>Thanks! We received UTR <b><?= e($o['utr']) ?></b> for <b><?= e($amount) ?></b>. You'll get an email and a notification as soon as access to <b><?= e($o['course_title']) ?></b> is active, usually within a few hours.</p>
-<div class="row gap-2 wrap"><a class="btn btn-dark" href="<?= e(url('/dashboard')) ?>">Go to dashboard</a><a class="btn btn-ghost" href="<?= e(url('/explore')) ?>">Explore courses</a></div></div>
+<div class="row gap-2 wrap"><a class="btn btn-dark" href="<?= e(url('/dashboard')) ?>">Go to dashboard</a><a class="btn btn-ghost" href="<?= e(url(setting('store_enabled') ? '/store' : '/courses')) ?>">Explore courses</a></div></div>
 </div>
 <?php else: ?>
 <?php if ($o['status'] === 'rejected'): ?><div class="alert alert-danger"><?= icon('alert') ?><span><b>We couldn't verify your last payment.</b> <?= e($o['admin_note']) ?> Please check the details and submit again.</span></div><?php endif; ?>

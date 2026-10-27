@@ -22,7 +22,7 @@ class Defaults {
             'bunny_library_id' => '', 'bunny_token_key' => '', 'bunny_cdn_host' => '',
             'quotes' => self::quotes(), 'show_quotes' => true,
             'update_repo' => 'narendersinghh/Zero-LMS', 'update_channel' => 'release', 'update_branch' => 'main', 'update_token' => '', 'installed_commit' => '',
-            'modules_enabled' => [], 'allow_registration' => true, 'upi_enabled' => true, 'upi_vpa' => '', 'upi_payee_name' => '', 'upi_instructions' => '', 'upi_provisional_access' => false, 'upi_require_proof' => false, 'currency' => 'INR', 'cron_last_run' => '', 'cron_secret' => '', 'web_cron' => true,];}
+            'modules_enabled' => [], 'allow_registration' => true, 'store_enabled' => false, 'store_home' => true, 'store_title' => 'Explore our courses', 'store_subtitle' => 'Practical lessons, one day at a time. Pick a course and start today.', 'upi_enabled' => true, 'upi_vpa' => '', 'upi_payee_name' => '', 'upi_instructions' => '', 'upi_provisional_access' => false, 'upi_require_proof' => false, 'currency' => 'INR', 'cron_last_run' => '', 'cron_secret' => '', 'web_cron' => true,];}
 
     public static function quotes(): array {
         return [

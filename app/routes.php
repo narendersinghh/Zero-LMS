@@ -3,6 +3,8 @@
 $r = app()->router();
 
 $r->get('/', function () {
+    if (!auth() && setting('store_enabled') && setting('store_home', true)) {
+        return (new \App\Controllers\StoreController())->catalog();}
     redirect(auth() ? (can('admin.access') ? '/admin' : '/dashboard') : '/login');});
 
 // Authentication
@@ -20,7 +22,9 @@ $r->get('/register', 'StoreController@showRegister', ['guest']);
 $r->post('/register', 'StoreController@register', ['guest']);
 
 // Public catalog & shareable course links (anyone can buy + create an account)
-$r->get('/explore', 'StoreController@catalog');
+$r->get('/store', 'StoreController@catalog');
+$r->get('/explore', function () {
+    redirect('/store');});
 $r->get('/c/{slug}', 'StoreController@show');
 $r->get('/c/{slug}/checkout', 'StoreController@checkout');
 $r->post('/c/{slug}/checkout', 'StoreController@placeOrder');

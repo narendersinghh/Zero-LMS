@@ -21,7 +21,7 @@ $cwUrl = fn($x) => url('/courses/' . $x['course']['slug'] . '/lessons/' . $x['le
 <span class="continue-text"><small>Continue · <?= e($continue['course']['title']) ?></small><b><?= e($continue['title']) ?></b><?php if ($continue['percent']): ?><span class="progress progress-thin"><i style="width:<?= (int)$continue['percent'] ?>%"></i></span><?php endif; ?></span>
 <?= icon('arrow-right', 'continue-arrow') ?>
 </a>
-<?php elseif (!$stats['courses']): ?><a class="btn btn-primary btn-lg" href="<?= e(url('/explore')) ?>"><?= icon('search') ?>Explore courses</a><?php endif; ?>
+<?php elseif (!$stats['courses']): ?><a class="btn btn-primary btn-lg" href="<?= e(url(setting('store_enabled') ? '/store' : '/courses')) ?>"><?= icon('search') ?>Explore courses</a><?php endif; ?>
 </div>
 <div class="banner-art"><?= illus('hero-learner') ?></div>
 </section>
@@ -52,9 +52,9 @@ $cwUrl = fn($x) => url('/courses/' . $x['course']['slug'] . '/lessons/' . $x['le
 <?php endif; ?>
 
 <section>
-<div class="section-head"><h2>My courses</h2><?php if (count($enrollments) > 4): ?><a href="<?= e(url('/courses')) ?>">View all</a><?php else: ?><a href="<?= e(url('/explore')) ?>">Explore more</a><?php endif; ?></div>
+<div class="section-head"><h2>My courses</h2><?php if (count($enrollments) > 4): ?><a href="<?= e(url('/courses')) ?>">View all</a><?php else: ?><a href="<?= e(url(setting('store_enabled') ? '/store' : '/courses')) ?>">Explore more</a><?php endif; ?></div>
 <?php if (!$enrollments): ?>
-<?php partial('empty', ['illus' => 'explore', 'heading' => 'No courses yet', 'text' => 'Browse the catalog or use the course link you received to enroll.', 'action' => '<a class="btn btn-primary" href="' . e(url('/explore')) . '">' . icon('search') . 'Explore courses</a>']); ?>
+<?php partial('empty', ['illus' => 'explore', 'heading' => 'No courses yet', 'text' => 'Browse the catalog or use the course link you received to enroll.', 'action' => '<a class="btn btn-primary" href="' . e(url(setting('store_enabled') ? '/store' : '/courses')) . '">' . icon('search') . 'Explore courses</a>']); ?>
 <?php else: ?>
 <div class="course-grid"><?php foreach (array_slice($enrollments, 0, 4) as $c): partial('course_card', ['c' => $c, 'p' => $overview[$c['id']] ?? []]); endforeach; ?></div>
 <?php endif; ?>

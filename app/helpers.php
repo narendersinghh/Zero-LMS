@@ -262,10 +262,40 @@ function course_illus(array $c): string {
     return asset('img/illus/course-' . $i . '.svg');}
 
 /** Cover image or tinted illustration panel for a course. */
-function course_visual(array $c, string $class = ''): string {
+/**
+ * URL of a resized copy of an uploaded image (created once with GD, cached under uploads/_thumbs).
+ * Falls back to the original when GD is missing or the file is not a JPEG/PNG/WebP.
+ */
+function thumb_url(?string $path, int $w = 640): string {
+    if (!$path) {
+        return '';}
+    $rel = ltrim($path, '/');
+    $src = BASE_PATH . '/uploads/' . $rel;
+    $out = '_thumbs/' . $w . '/' . preg_replace('/\.\w+$/', '', $rel) . '.jpg';
+    $dst = BASE_PATH . '/uploads/' . $out;
+    if (is_file($dst) && filemtime($dst) >= @filemtime($src)) {
+        return upload_url($out);}
+    $info = function_exists('imagecreatetruecolor') && is_file($src) ? @getimagesize($src) : false;
+    $make = [IMAGETYPE_JPEG => 'imagecreatefromjpeg', IMAGETYPE_PNG => 'imagecreatefrompng', IMAGETYPE_WEBP => 'imagecreatefromwebp'][$info[2] ?? 0] ?? null;
+    if (!$info || !$make || !function_exists($make) || $info[0] <= $w || $info[0] * $info[1] > 40000000) {
+        return upload_url($path);}
+    $im = @$make($src);
+    if (!$im) {
+        return upload_url($path);}
+    $h = (int)round($info[1] * $w / $info[0]);
+    $t = imagecreatetruecolor($w, $h);
+    imagefill($t, 0, 0, imagecolorallocate($t, 255, 255, 255));
+    imagecopyresampled($t, $im, 0, 0, 0, 0, $w, $h, $info[0], $info[1]);
+    @mkdir(dirname($dst), 0755, true);
+    $ok = @imagejpeg($t, $dst, 82);
+    imagedestroy($im);
+    imagedestroy($t);
+    return upload_url($ok ? $out : $path);}
+
+function course_visual(array $c, string $class = '', int $w = 640): string {
     if (!empty($c['cover_image'])) {
-        return '<div class="cv ' . e($class) . '" style="background-image:url(\'' . e(upload_url($c['cover_image'])) . '\')"></div>';}
+        return '<div class="cv ' . e($class) . '" style="background-image:url(\'' . e(thumb_url($c['cover_image'], $w)) . '\')"></div>';}
     return '<div class="cv cv-illus tint-' . e(course_tint($c)) . ' ' . e($class) . '"><img src="' . e(course_illus($c)) . '" alt="" loading="lazy"></div>';}
 
-function illus(string $name, string $class = '', string $alt = ''): string {
-    return '<img class="illus ' . e($class) . '" src="' . e(asset('img/illus/' . $name . '.svg')) . '" alt="' . e($alt) . '" loading="lazy">';}
+function illus(string $name, string $class = '', string $alt = '', bool $lazy = true): string {
+    return '<img class="illus ' . e($class) . '" src="' . e(asset('img/illus/' . $name . '.svg')) . '" alt="' . e($alt) . '"' . ($lazy ? ' loading="lazy"' : ' fetchpriority="high"') . '>';}

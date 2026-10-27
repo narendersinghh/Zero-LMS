@@ -126,7 +126,13 @@
     }
     function build(id) {
       var cover = root.querySelector('[data-yt-cover]'), timer = null, ccOn = false, wantQ = '';
-      cover.style.backgroundImage = 'url(https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/hqdefault.jpg)';
+      /* Sharpest poster available: maxres (1280px) → sd (640px) → hq (480px). Missing sizes come back as a 120px placeholder. */
+      (function poster(list) {
+        var u = 'https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/' + list[0] + '.jpg', im = new Image();
+        im.onload = function () { if (im.naturalWidth > 120 || list.length === 1) { cover.style.backgroundImage = 'url(' + u + ')'; } else { poster(list.slice(1)); } };
+        im.onerror = function () { if (list.length > 1) { poster(list.slice(1)); } };
+        im.src = u;
+      })(['maxresdefault', 'sddefault', 'hqdefault']);
       var p = new YT.Player(root.querySelector('[data-yt-mount]'), {
         host: 'https://www.youtube-nocookie.com', videoId: id, width: '100%', height: '100%',
         playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, iv_load_policy: 3, playsinline: 1, cc_load_policy: 0, showinfo: 0, autoplay: 0, enablejsapi: 1, origin: location.origin, start: resume > 5 ? Math.floor(resume) : 0 },

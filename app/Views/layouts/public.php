@@ -7,8 +7,8 @@ $u = auth();
 <body class="public-body">
 <header class="pub-top">
 <div class="pub-in">
-<?php partial('logo', ['href' => $u ? '/dashboard' : '/explore']); ?>
-<nav class="pub-nav"><a href="<?= e(url('/explore')) ?>" class="<?= is_path('/explore') ? 'active' : '' ?>">Explore courses</a></nav>
+<?php partial('logo', ['href' => $u ? '/dashboard' : (setting('store_enabled') ? '/store' : '/login')]); ?>
+<nav class="pub-nav"><?php if (setting('store_enabled')): ?><a href="<?= e(url('/store')) ?>" class="<?= is_path('/store') || is_path('/c') ? 'active' : '' ?>">All courses</a><?php endif; ?></nav>
 <div class="pub-actions">
 <?php partial('theme_toggle'); ?>
 <?php if ($u): ?><a class="btn btn-primary btn-sm" href="<?= e(url(can('admin.access') ? '/admin' : '/dashboard')) ?>"><?= icon('grid') ?>My dashboard</a>

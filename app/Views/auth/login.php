@@ -9,5 +9,5 @@
 <a href="<?= e(url('/password/forgot')) ?>" class="small forgot-link">Forgot password?</a></div>
 <button type="submit" class="btn btn-primary btn-lg btn-block">Sign in <?= icon('arrow-right') ?></button>
 </form>
-<?php if (setting('allow_registration', true)): ?><p class="muted small mt-4 center">New here? <a href="<?= e(url('/register')) ?>">Create an account</a> · <a href="<?= e(url('/explore')) ?>">Explore courses</a></p><?php endif; ?>
+<?php if (setting('allow_registration', true)): ?><p class="muted small mt-4 center">New here? <a href="<?= e(url('/register')) ?>">Create an account</a><?php if (setting('store_enabled')): ?> · <a href="<?= e(url('/store')) ?>">Browse courses</a><?php endif; ?></p><?php endif; ?>
 <p class="muted small mt-2 center">Got a welcome email? Use its setup link, or <a href="<?= e(url('/password/forgot')) ?>">request a new one</a>.</p>
