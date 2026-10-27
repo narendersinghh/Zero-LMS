@@ -10,7 +10,7 @@ $vpa = (string)setting('upi_vpa');
 <div class="card state-card tint-blue">
 <?= illus('verify', 'state-illus') ?>
 <div><span class="pill pill-dark">Order <?= e($o['ref']) ?></span><h1 class="h2">We're verifying your payment</h1>
-<p>Thanks! We received UTR <b><?= e($o['utr']) ?></b> for <b><?= e($amount) ?></b>. You'll get an email and a notification as soon as access to <b><?= e($o['course_title']) ?></b> is active — usually within a few hours.</p>
+<p>Thanks! We received UTR <b><?= e($o['utr']) ?></b> for <b><?= e($amount) ?></b>. You'll get an email and a notification as soon as access to <b><?= e($o['course_title']) ?></b> is active, usually within a few hours.</p>
 <div class="row gap-2 wrap"><a class="btn btn-dark" href="<?= e(url('/dashboard')) ?>">Go to dashboard</a><a class="btn btn-ghost" href="<?= e(url('/explore')) ?>">Explore courses</a></div></div>
 </div>
 <?php else: ?>
@@ -35,7 +35,7 @@ $vpa = (string)setting('upi_vpa');
 <div class="field"><label for="utr">UPI transaction ID / UTR</label><input id="utr" name="utr" value="<?= e(old('utr', $o['status'] === 'rejected' ? '' : (string)$o['utr'])) ?>" required inputmode="numeric" autocomplete="off" placeholder="e.g. 412345678901" maxlength="30"><?= field_error('utr') ?><small class="hint">Find it in your UPI app under the payment's details (12 digits).</small></div>
 <div class="field"><label for="proof">Payment screenshot <?= setting('upi_require_proof') ? '' : '<span class="muted">(optional)</span>' ?></label><input id="proof" type="file" name="proof" accept="image/png,image/jpeg,image/webp" <?= setting('upi_require_proof') ? 'required' : '' ?>></div>
 <div class="field"><label for="note">Note <span class="muted">(optional)</span></label><input id="note" name="note" maxlength="255" placeholder="Paid from another number? Tell us here."></div>
-<button class="btn btn-primary btn-lg btn-block"><?= icon('check-circle') ?>I've paid — submit</button>
+<button class="btn btn-primary btn-lg btn-block"><?= icon('check-circle') ?>I've paid, submit</button>
 </form>
 <form method="post" action="<?= e(url('/orders/' . $o['ref'] . '/cancel')) ?>" class="center"><?= csrf_field() ?><button class="link-btn muted" data-confirm="Cancel this order?">Cancel order</button></form>
 </div>

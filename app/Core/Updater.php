@@ -103,8 +103,16 @@ class Updater {
                     @unlink($part);
                     throw new \RuntimeException('Cannot write ' . $rel . ' (check file permissions).');}
                 $count++;}
+            // Files deleted from the codebase are listed in the release's version.json ("removed") and cleaned up here.
+            $gone = 0;
+            foreach ((array)(json_decode((string)$zip->getFromName($prefix . 'version.json'), true)['removed'] ?? []) as $rel) {
+                $rel = trim((string)$rel, '/');
+                if ($rel === '' || strpos($rel, '..') !== false || self::isProtected($rel) || !preg_match('#^(app|assets|database|tools)/#', $rel) || !file_exists(BASE_PATH . '/' . $rel)) {
+                    continue;}
+                is_dir(BASE_PATH . '/' . $rel) ? Scheduler::rmdir(BASE_PATH . '/' . $rel) : @unlink(BASE_PATH . '/' . $rel);
+                $gone++;}
             $zip->close();
-            $log[] = "Updated $count files.";
+            $log[] = "Updated $count files" . ($gone ? ", removed $gone obsolete." : '.');
             if (function_exists('opcache_reset')) {
                 @opcache_reset();}
             $ran = Migrator::run();

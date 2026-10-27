@@ -43,7 +43,7 @@ class OrderController extends Controller {
     public function approve(string $id) {
         $o = $this->order($id);
         Payments::markPaid($o, $o['utr'] ?: null, $this->req->str('note'));
-        $this->ok('Payment approved — access granted and the student was emailed.');}
+        $this->ok('Payment approved. Access granted and the student was emailed.');}
 
     public function reject(string $id) {
         $o = $this->order($id);

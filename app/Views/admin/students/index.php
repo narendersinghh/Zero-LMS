@@ -3,8 +3,10 @@ $layout = 'admin';
 $title = 'Students';
 $q = $_GET;
 unset($q['page']);
-$actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/admin/students/export', $q)) . '">' . icon('download') . 'Export</a><a class="btn btn-ghost btn-sm" href="' . e(url('/admin/import')) . '">' . icon('upload') . 'Import CSV</a><a class="btn btn-primary btn-sm" href="' . e(url('/admin/students/create')) . '">' . icon('plus') . 'Add student</a>';
+$actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/admin/students/export', $q)) . '">' . icon('download') . 'Export</a><a class="btn btn-primary btn-sm" href="' . e(url('/admin/students/create')) . '">' . icon('plus') . 'Add student</a>';
 $st = (string)($_GET['status'] ?? '');
+$section = 'students';
+include \App\Core\View::find('admin/students/_tabs');
 ?>
 <form class="toolbar" method="get">
 <div class="search grow"><?= icon('search') ?><input type="search" name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="Search name, email or phone…"></div>

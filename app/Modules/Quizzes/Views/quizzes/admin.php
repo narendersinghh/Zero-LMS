@@ -21,7 +21,7 @@ $optRows = function (array $opts, int $correct, string $prefix) {
 <button class="btn-icon" formaction="<?= e(url('/admin/quiz-questions/' . $q['id'] . '/move')) ?>" name="dir" value="down" formnovalidate title="Move down"<?= $n === count($questions) - 1 ? ' disabled' : '' ?>><?= icon('chevron-down') ?></button>
 <button class="btn-icon danger" formaction="<?= e(url('/admin/quiz-questions/' . $q['id'] . '/delete')) ?>" formnovalidate title="Delete" data-confirm="Delete this question?"><?= icon('trash') ?></button></div></div>
 <div class="field"><label>Question</label><textarea name="question" rows="2" required maxlength="2000"><?= e($q['question']) ?></textarea></div>
-<div class="field"><label>Answers <small class="muted">— select the correct one</small></label><?= $optRows($q['options'], (int)$q['correct_index'], 'q' . $q['id']) ?></div>
+<div class="field"><label>Answers <small class="muted">(select the correct one)</small></label><?= $optRows($q['options'], (int)$q['correct_index'], 'q' . $q['id']) ?></div>
 <div class="field"><label>Explanation <span class="muted">(shown after submitting)</span></label><textarea name="explanation" rows="2" maxlength="2000"><?= e($q['explanation']) ?></textarea></div>
 <div><button class="btn btn-ghost btn-sm"><?= icon('check') ?>Save question</button></div>
 </form>
@@ -30,7 +30,7 @@ $optRows = function (array $opts, int $correct, string $prefix) {
 <?= csrf_field() ?>
 <div class="card-head"><h3><?= icon('plus') ?> New question</h3></div>
 <div class="field"><label>Question</label><textarea name="question" rows="2" required maxlength="2000" placeholder="e.g. What is the first step of the habit loop?"></textarea></div>
-<div class="field"><label>Answers <small class="muted">— select the correct one</small></label><?= $optRows([], 0, 'new') ?></div>
+<div class="field"><label>Answers <small class="muted">(select the correct one)</small></label><?= $optRows([], 0, 'new') ?></div>
 <div class="field"><label>Explanation <span class="muted">(optional)</span></label><textarea name="explanation" rows="2" maxlength="2000"></textarea></div>
 <div><button class="btn btn-primary"><?= icon('plus') ?>Add question</button></div>
 </form>

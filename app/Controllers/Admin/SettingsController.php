@@ -93,7 +93,7 @@ class SettingsController extends Controller {
             case 'learning':
                 $quotes = array_values(array_filter(array_map('trim', preg_split('/\r?\n/', (string)$this->req->input('quotes', '')))));
                 $v = ['show_quotes' => $this->req->bool('show_quotes'), 'quotes' => $quotes, 'notify_lesson_unlock' => $this->req->bool('notify_lesson_unlock'), 'email_lesson_unlock' => $this->req->bool('email_lesson_unlock'),
-                    'expiry_reminder_days' => max(0, min(30, (int)$in('expiry_reminder_days', '3'))), 'web_cron' => $this->req->bool('web_cron')];
+                    'expiry_reminder_days' => max(0, min(30, (int)$in('expiry_reminder_days', '3')))];
                 break;}
         Settings::set($v);
         Audit::log('settings.updated', 'settings', null, ['tab' => $tab, 'keys' => array_keys($v)]);

@@ -66,7 +66,6 @@ class DashboardController extends Controller {
         catch (\Throwable $e) {
             $driver = 'log';}
         $cronLast = (string)Settings::get('cron_last_run', '');
-        $cronStale = !$cronLast || strtotime($cronLast . ' UTC') < time() - 86400;
         $upd = Settings::get('update_last_result');
         $attention = [];
         if ((int)$s['orders_submitted'] && Auth::can('orders.manage')) {
@@ -75,8 +74,6 @@ class DashboardController extends Controller {
             $attention[] = ['mail', 'pink', 'Emails are not being delivered', 'Mail driver is "log". Connect an SMTP or API provider.', '/admin/settings/mail', 'Set up'];}
         if ((int)$s['mail_failed']) {
             $attention[] = ['alert', 'pink', (int)$s['mail_failed'] . ' email' . ((int)$s['mail_failed'] === 1 ? '' : 's') . ' failed', 'Check your email delivery settings, then retry.', '/admin/mail-log?status=failed', 'Review'];}
-        if ($cronStale && Auth::can('settings.system')) {
-            $attention[] = ['clock', 'yellow', 'Scheduled tasks ' . ($cronLast ? 'haven\'t run in 24h' : 'have never run'), 'Lesson unlock emails and reminders depend on them.', '/admin/system#cron', 'Fix'];}
         if ((int)$s['pending_setup']) {
             $attention[] = ['user', 'blue', (int)$s['pending_setup'] . ' student' . ((int)$s['pending_setup'] === 1 ? '' : 's') . ' haven\'t activated', 'They never set a password. Resend the setup email.', '/admin/students?status=pending', 'View'];}
         if ((int)$s['expiring']) {
@@ -91,8 +88,7 @@ class DashboardController extends Controller {
             ['Add your UPI ID', trim((string)Settings::get('upi_vpa', '')) !== '', '/admin/settings/payments'],
             ['Publish a course', (int)$s['courses'] > 0, '/admin/courses'],
             ['Share a public course link', (int)$s['public_courses'] > 0, '/admin/courses'],
-            ['Enroll your first student', $firstStudent, '/admin/students/create'],
-            ['Set up scheduled tasks (cron)', !$cronStale, '/admin/system#cron'],];
+            ['Enroll your first student', $firstStudent, '/admin/students/create'],];
         $top = DB::all("SELECT c.id, c.title, c.slug, c.cover_image, c.color, c.illustration, c.status,
             (SELECT COUNT(*) FROM {enrollments} e WHERE e.course_id = c.id) AS enrolled,
             (SELECT COUNT(*) FROM {enrollments} e WHERE e.course_id = c.id AND e.completed_at IS NOT NULL) AS completed,

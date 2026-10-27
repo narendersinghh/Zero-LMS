@@ -92,14 +92,8 @@ class VideoController extends Controller {
 
     public function external() {
         $d = $this->validate(['title' => 'required|max:200', 'provider' => 'required|in:bunny,vimeo,youtube', 'source' => 'required|max:500', 'duration' => 'max:10']);
-        $src = $d['source'];
-        if ($d['provider'] === 'youtube') {
-            $src = Media::youtubeId($src);}
-        elseif ($d['provider'] === 'vimeo') {
-            $src = Media::vimeoId($src);}
-        elseif (preg_match('~/([0-9a-f-]{36})~i', $src, $m)) {
-            $src = $m[1];}
-        $dur = preg_match('/^(\d+):(\d{2})$/', (string)$d['duration'], $m) ? (int)$m[1] * 60 + (int)$m[2] : (int)$d['duration'] * 60;
+        $src = self::sourceId($d['provider'], $d['source']);
+        $dur = self::seconds((string)$d['duration'], 60);
         $id = DB::insert('videos', ['title' => $d['title'], 'provider' => $d['provider'], 'source' => $src, 'duration' => $dur, 'created_by' => Auth::id(), 'created_at' => now(), 'updated_at' => now()]);
         Audit::log('video.added', 'video', $id, ['provider' => $d['provider']]);
         if ($this->req->isAjax()) {
@@ -125,10 +119,37 @@ class VideoController extends Controller {
         Audit::log('video.scan', null, null, ['imported' => $n]);
         $this->ok($n ? "$n video(s) imported from the incoming folder." : 'No new video files found in storage/videos/incoming.');}
 
+    /** Extract the provider's video ID from a pasted URL or ID. */
+    private static function sourceId(string $provider, string $src): string {
+        if ($provider === 'youtube') {
+            return Media::youtubeId($src);}
+        if ($provider === 'vimeo') {
+            return Media::vimeoId($src);}
+        return preg_match('~/([0-9a-f-]{36})~i', $src, $m) ? $m[1] : trim($src);}
+
+    /** "h:mm:ss" or "mm:ss" to seconds; a bare number is multiplied by $unit. */
+    private static function seconds(string $v, int $unit = 1): int {
+        $v = trim($v);
+        if (strpos($v, ':') === false) {
+            return max(0, (int)$v * $unit);}
+        $t = 0;
+        foreach (explode(':', $v) as $part) {
+            $t = $t * 60 + (int)$part;}
+        return $t;}
+
     public function update(string $id) {
         $v = DB::one('SELECT * FROM {videos} WHERE id = ?', [(int)$id]) ?? abort(404);
-        $d = $this->validate(['title' => 'required|max:200', 'duration' => 'int']);
-        DB::update('videos', ['title' => $d['title'], 'duration' => max(0, (int)$d['duration']), 'updated_at' => now()], 'id = ?', [$v['id']]);
+        $d = $this->validate(['title' => 'required|max:200', 'duration' => 'max:10', 'provider' => 'in:bunny,vimeo,youtube', 'source' => 'max:500']);
+        $row = ['title' => $d['title'], 'duration' => self::seconds((string)($d['duration'] ?? 0)), 'updated_at' => now()];
+        if ($v['provider'] !== 'local' && trim((string)($d['source'] ?? '')) !== '') {
+            $prov = ($d['provider'] ?? '') ?: $v['provider'];
+            $src = self::sourceId($prov, (string)$d['source']);
+            if ($src === '') {
+                flash('error', 'That video link could not be read. Paste the full URL or the video ID.');
+                back();}
+            $row += ['provider' => $prov, 'source' => $src];}
+        DB::update('videos', $row, 'id = ?', [$v['id']]);
+        Audit::log('video.updated', 'video', (int)$v['id'], array_intersect_key($row, ['provider' => 1, 'source' => 1]));
         if ($this->req->isAjax()) {
             json_out(['ok' => true]);}
         $this->ok('Video updated.');}

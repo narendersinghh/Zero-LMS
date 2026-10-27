@@ -12,7 +12,7 @@ Until you choose a provider, Zeroes runs in **Log only** mode: emails are writte
 
 | Situation | Recommended |
 |---|---|
-| Just starting, want it to work in 5 minutes | **Brevo** (API) or **Mailjet** (API) — free plans, simple setup |
+| Just starting, want it to work in 5 minutes | **Brevo** (API) or **Mailjet** (API), free plans, simple setup |
 | High volume / developer tools | **SendGrid**, **Mailgun**, **Postmark**, **Amazon SES** |
 | You already have business email | **Zoho Mail**, **Google Workspace / Gmail**, **Microsoft 365**, **Hostinger** or **cPanel** mailbox (SMTP) |
 | Testing only | **Log only** |
@@ -24,10 +24,10 @@ Until you choose a provider, Zeroes runs in **Log only** mode: emails are writte
 
 ## Setup in 4 steps (inside Zeroes)
 
-1. **Choose your provider** — click its card.
-2. **Connect** — paste the API key (or SMTP username/password). Server, port and encryption are filled in for you.
-3. **Sender** — enter a From name and a From email that you have verified with the provider.
-4. **Send a test** — uses the values in the form without saving. When it arrives, click **Save**.
+1. **Choose your provider**: click its card.
+2. **Connect**: paste the API key (or SMTP username/password). Server, port and encryption are filled in for you.
+3. **Sender**: enter a From name and a From email that you have verified with the provider.
+4. **Send a test**: uses the values in the form without saving. When it arrives, click **Save**.
 
 Keys and passwords are stored encrypted. To keep a saved key, leave the field blank.
 
@@ -35,20 +35,20 @@ Keys and passwords are stored encrypted. To keep a saved key, leave the field bl
 
 ### Brevo (formerly Sendinblue)
 1. Sign up at brevo.com.
-2. **Senders, Domains & Dedicated IPs** → add and verify your sender email (or authenticate your domain — recommended).
+2. **Senders, Domains & Dedicated IPs** → add and verify your sender email (or authenticate your domain, recommended).
 3. API: **Settings → SMTP & API → API keys → Generate a new API key**. Choose *Brevo* → *API* in Zeroes and paste the key.
 4. SMTP alternative: **SMTP & API → SMTP** tab. Login = the SMTP login shown there, password = an **SMTP key** (not your account password). Server `smtp-relay.brevo.com`, port 587.
 
 ### Mailjet
 1. Sign up at mailjet.com and validate your sender address or domain.
 2. **Account settings → REST API → API key management**.
-3. Copy the **API key** and **Secret key** — both are needed (for SMTP they are the username and password; server `in-v3.mailjet.com`, port 587).
+3. Copy the **API key** and **Secret key**: both are needed (for SMTP they are the username and password; server `in-v3.mailjet.com`, port 587).
 
 ### Gmail / Google Workspace
 1. Turn on **2-Step Verification** for the account.
 2. Open **myaccount.google.com/apppasswords**, create an app password called "Zeroes".
 3. In Zeroes choose *Gmail*, username = your full address, password = the 16-character app password. Your normal password will not work.
-4. Google limits daily sending (roughly 500/day for Gmail, more for Workspace) — use a provider for large cohorts.
+4. Google limits daily sending (roughly 500/day for Gmail, more for Workspace), use a provider for large cohorts.
 
 ### Zoho Mail
 - Server: `smtp.zoho.in` (India), `smtp.zoho.com` (global) or `smtp.zoho.eu` (EU), port 465 SSL.
@@ -59,7 +59,7 @@ Keys and passwords are stored encrypted. To keep a saved key, leave the field bl
 1. cPanel → **Email Accounts** → create e.g. `no-reply@yourdomain.com`.
 2. Click **Connect Devices** to see the outgoing server (usually `mail.yourdomain.com`, port 465 SSL).
 3. Use the full address and mailbox password.
-4. If the test times out, your host blocks outgoing SMTP — switch to an API provider.
+4. If the test times out, your host blocks outgoing SMTP, switch to an API provider.
 
 ### SendGrid
 1. Complete **Sender Authentication** (single sender or domain).
@@ -84,7 +84,7 @@ Keys and passwords are stored encrypted. To keep a saved key, leave the field bl
 
 Your provider shows the exact records to add in your domain's DNS (cPanel → Zone Editor, Hostinger → DNS Zone, Cloudflare → DNS):
 
-- **SPF** (TXT): lists who may send for your domain. Only one SPF record per domain — merge includes, e.g. `v=spf1 include:spf.brevo.com include:_spf.google.com ~all`.
+- **SPF** (TXT): lists who may send for your domain. Only one SPF record per domain, merge includes, e.g. `v=spf1 include:spf.brevo.com include:_spf.google.com ~all`.
 - **DKIM** (TXT or CNAME): a signature key proving the email wasn't altered.
 - **DMARC** (TXT at `_dmarc`): tells inboxes what to do with failures. Start with `v=DMARC1; p=none; rua=mailto:you@yourdomain.com`.
 
@@ -98,7 +98,7 @@ DNS changes can take up to a few hours. Most providers have a "verify" button.
 | `Connection timed out`, `Could not connect` | Host blocks the port | Try port 2525 (Brevo, Mailjet, SendGrid, Mailgun) or use the API method. |
 | "Sender not verified", 550 rejected | From address/domain not verified | Verify the sender or authenticate the domain with your provider. |
 | `STARTTLS` / certificate errors | Encryption doesn't match the port | 587 → STARTTLS, 465 → SSL. |
-| Test works but students get nothing | Queue isn't being processed | Set up the cron job shown in **System & updates** or enable web cron in **Settings → Learning**. Check **Email templates → Email log**. |
+| Test works but students get nothing | Provider rejects the real emails | Emails are sent automatically right after they are queued. Open **Email log** to see the exact provider error (often an unverified sender, or Brevo's *Authorised IPs* blocking your server). |
 | Emails land in spam | Missing SPF/DKIM or sending from a free address | Use an address on your own domain and add SPF/DKIM/DMARC. |
 
 ## Where things are

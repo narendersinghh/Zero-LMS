@@ -53,7 +53,7 @@ $typeIcon = ['video' => 'video', 'text' => 'file', 'embed' => 'external'];
 <div class="card mt-4">
 <form method="post" action="<?= e(url('/admin/courses/' . $course['id'] . '/modules')) ?>" class="row gap-2 wrap end-items">
 <?= csrf_field() ?>
-<div class="field grow"><label>New module</label><input name="title" placeholder="e.g. Week 1 — Foundations" required></div>
+<div class="field grow"><label>New module</label><input name="title" placeholder="e.g. Week 1: Foundations" required></div>
 <div class="field w-160"><label>Unlock day</label><input type="number" min="1" name="release_day" placeholder="Optional"></div>
 <button class="btn btn-primary"><?= icon('plus') ?>Add module</button>
 </form>

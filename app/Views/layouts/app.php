@@ -26,7 +26,7 @@ $navLink = function (array $n) {
 <?php if ($extra): ?><span class="side-label">Tools</span><nav class="side-nav"><?php foreach ($extra as $n) echo $navLink($n); ?></nav><?php endif; ?>
 <span class="side-label">Account</span>
 <nav class="side-nav"><?php foreach ($account as $n) echo $navLink($n); ?><?php if (can('admin.access')): ?><a href="<?= e(url('/admin')) ?>"><?= icon('grid') ?><span>Admin panel</span></a><?php endif; ?></nav>
-<a class="side-card" href="<?= e(url('/dashboard')) ?>"><b><?= (int)$streak ?> day<?= $streak === 1 ? '' : 's' ?></b><small><?= $streak ? 'Learning streak — keep it alive today!' : 'Watch a lesson today to start a streak.' ?></small><img src="<?= e(asset('img/illus/streak.svg')) ?>" alt=""></a>
+<a class="side-card" href="<?= e(url('/dashboard')) ?>"><b><?= (int)$streak ?> day<?= $streak === 1 ? '' : 's' ?></b><small><?= $streak ? 'Learning streak, keep it alive today!' : 'Watch a lesson today to start a streak.' ?></small><img src="<?= e(asset('img/illus/streak.svg')) ?>" alt=""></a>
 </aside>
 <div class="app-main">
 <header class="app-top">

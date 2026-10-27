@@ -11,13 +11,7 @@
 </div>
 </section>
 <section class="set-sec">
-<div class="set-desc"><h3>Scheduler</h3><p>For best reliability add the cron job from System & updates. Without it, tasks run during page visits.</p></div>
-<div class="card set-fields">
-<div class="set-row"><div><b>Run tasks during page visits</b><small>Fallback for hosting without cron jobs.</small></div><label class="switch"><input type="checkbox" name="web_cron" value="1"<?= checked($s['web_cron']) ?>><span></span></label></div>
-</div>
-</section>
-<section class="set-sec">
-<div class="set-desc"><h3>Motivational quotes</h3><p>A different quote each day on the dashboard, course and lesson pages. One per line, “Quote — Author”. Courses can have their own list.</p></div>
+<div class="set-desc"><h3>Motivational quotes</h3><p>A different quote each day on the dashboard, course and lesson pages. One per line, “Quote - Author”. Courses can have their own list.</p></div>
 <div class="card set-fields">
 <div class="set-row"><div><b>Show quotes</b></div><label class="switch"><input type="checkbox" name="show_quotes" value="1"<?= checked($s['show_quotes']) ?>><span></span></label></div>
 <textarea name="quotes" rows="10"><?= e(implode("\n", (array)$s['quotes'])) ?></textarea>

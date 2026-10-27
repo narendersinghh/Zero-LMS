@@ -157,7 +157,7 @@ class Mailer {
                 $msg = (string)$j['ErrorInfo'];}}
         if ($msg === '') {
             $msg = trim(strip_tags(substr((string)$res, 0, 300)));}
-        $hint = in_array($code, [401, 403], true) ? ' (check the API key and that your sender is verified)' : '';
+        $hint = in_array($code, [401, 403], true) ? (stripos($msg, 'ip') !== false ? ' (allow your server IP in the provider security settings)' : ' (check the API key and that your sender is verified)') : '';
         throw new \RuntimeException('Provider returned HTTP ' . $code . ': ' . ($msg ?: 'unknown error') . $hint);}
 
     public static function encodeHeader(string $s): string {

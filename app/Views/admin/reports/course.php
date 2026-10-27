@@ -58,7 +58,7 @@ $statusCls = ['published' => 'success', 'draft' => 'muted', 'archived' => 'warni
 </div>
 
 <div class="card">
-<div class="card-head"><div><h3>Lesson engagement</h3><small class="muted">% of enrolled students who opened and completed each lesson, in curriculum order — a falling bar shows where students drop off</small></div><div class="legend"><span><i class="rp-lg-v"></i>Viewed</span><span><i class="rp-lg-c"></i>Completed</span></div></div>
+<div class="card-head"><div><h3>Lesson engagement</h3><small class="muted">% of enrolled students who opened and completed each lesson, in curriculum order. A falling bar shows where students drop off</small></div><div class="legend"><span><i class="rp-lg-v"></i>Viewed</span><span><i class="rp-lg-c"></i>Completed</span></div></div>
 <?php if (!$lessonStats): ?><p class="muted small m-0">This course has no published lessons.</p><?php endif; ?>
 <div class="rp-lessons">
 <?php foreach ($lessonStats as $i => $l): $v = round($l['viewers'] / $enrolled * 100); $c = round($l['completions'] / $enrolled * 100); ?>

@@ -70,8 +70,8 @@ class Installer {
             DB::run('INSERT IGNORE INTO {email_templates} (`key`, name, subject, body, enabled, updated_at) VALUES (?,?,?,?,1,?)', [$key, $t['name'], $t['subject'], $t['body'], now()]);}}
 
     public static function demo(): void {
-        $cid = DB::insert('courses', ['title' => '21-Day Growth Challenge', 'slug' => 'growth-challenge', 'subtitle' => 'A daily video lesson to build momentum — one small step every day.', 'description' => '<p>Welcome! A new lesson unlocks every morning. Watch it, take one action, and mark it complete.</p>',
-            'category' => 'Webinar bonus', 'instructor_name' => 'Zeroes Team', 'status' => 'published', 'access_days' => 60, 'release_time' => '06:00:00', 'quotes' => "Small steps every day add up to big results.\nYou don't have to be great to start, but you have to start to be great. — Zig Ziglar", 'created_at' => now(), 'updated_at' => now()]);
+        $cid = DB::insert('courses', ['title' => '21-Day Growth Challenge', 'slug' => 'growth-challenge', 'subtitle' => 'A daily video lesson to build momentum, one small step every day.', 'description' => '<p>Welcome! A new lesson unlocks every morning. Watch it, take one action, and mark it complete.</p>',
+            'category' => 'Webinar bonus', 'instructor_name' => 'Zeroes Team', 'status' => 'published', 'access_days' => 60, 'release_time' => '06:00:00', 'quotes' => "Small steps every day add up to big results.\nYou don't have to be great to start, but you have to start to be great. - Zig Ziglar", 'created_at' => now(), 'updated_at' => now()]);
         $lessons = [];
         for ($w = 1; $w <= 3; $w++) {
             $mid = DB::insert('modules', ['course_id' => $cid, 'title' => 'Week ' . $w, 'description' => ['Foundations', 'Momentum', 'Mastery'][$w - 1], 'sort_order' => $w, 'created_at' => now(), 'updated_at' => now()]);

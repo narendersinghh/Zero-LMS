@@ -10,7 +10,7 @@ $groups = [
     'Brand' => ['accent' => 'Accent / buttons', 'accent_contrast' => 'Text on accent', 'accent_text' => 'Links & accent text', 'hero_from' => 'Banner gradient start', 'hero_to' => 'Banner gradient end'],
     'Status' => ['success' => 'Success', 'warning' => 'Warning', 'danger' => 'Danger'],];
 ?>
-<div class="settings-hero tint-pink"><span class="sh-ico"><?= icon('palette') ?></span><div><h2>Branding & theme</h2><p>Make Zeroes look like your brand — no code needed. Colors preview live as you change them.</p></div></div>
+<div class="settings-hero tint-pink"><span class="sh-ico"><?= icon('palette') ?></span><div><h2>Branding & theme</h2><p>Make Zeroes look like your brand, no code needed. Colors preview live as you change them.</p></div></div>
 <form method="post" action="<?= e(url('/admin/settings/branding')) ?>" enctype="multipart/form-data" class="stack-lg" data-loading data-theme-editor>
 <?= csrf_field() ?>
 <section class="set-sec">

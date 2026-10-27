@@ -19,7 +19,7 @@ class MailProviders {
                 'steps' => ['Sign up at mailjet.com and validate your sender address or domain.', 'Open Account settings → REST API → API key management (Primary and Sub-account).', 'Copy the API key and the Secret key. Both are needed for API and SMTP.'],
                 'docs' => 'https://documentation.mailjet.com/hc/en-us/articles/360043229473'],
             'sendgrid' => ['name' => 'SendGrid', 'aka' => 'Twilio', 'color' => '#1a82e2', 'tagline' => 'Popular, high-volume transactional email.', 'methods' => ['api', 'smtp'],
-                'smtp' => ['host' => 'smtp.sendgrid.net', 'port' => 587, 'secure' => 'tls', 'user_label' => 'Username — type the word apikey', 'pass_label' => 'API key', 'user_fixed' => 'apikey'],
+                'smtp' => ['host' => 'smtp.sendgrid.net', 'port' => 587, 'secure' => 'tls', 'user_label' => 'Username: type the word apikey', 'pass_label' => 'API key', 'user_fixed' => 'apikey'],
                 'api' => ['key_label' => 'API key (Mail Send permission)'],
                 'steps' => ['Create a SendGrid account and complete Sender Authentication (single sender or domain).', 'Go to Settings → API Keys → Create API Key with “Mail Send” access.', 'Paste the key here. For SMTP the username is literally “apikey”.'],
                 'docs' => 'https://docs.sendgrid.com/for-developers/sending-email/integrating-with-the-smtp-api'],
@@ -43,7 +43,7 @@ class MailProviders {
                 'docs' => 'https://www.zoho.com/mail/help/zoho-smtp.html'],
             'gmail' => ['name' => 'Gmail / Google Workspace', 'color' => '#ea4335', 'tagline' => 'Fine for small volumes (Google daily limits apply).', 'methods' => ['smtp'],
                 'smtp' => ['host' => 'smtp.gmail.com', 'port' => 587, 'secure' => 'tls', 'user_label' => 'Your Gmail / Workspace address', 'pass_label' => '16-character App Password'],
-                'steps' => ['Turn on 2-Step Verification for the Google account.', 'Open myaccount.google.com/apppasswords and create an App Password (name it “Zeroes”).', 'Paste the 16-character App Password here — your normal Gmail password will not work.'],
+                'steps' => ['Turn on 2-Step Verification for the Google account.', 'Open myaccount.google.com/apppasswords and create an App Password (name it “Zeroes”).', 'Paste the 16-character App Password here. Your normal Gmail password will not work.'],
                 'docs' => 'https://support.google.com/accounts/answer/185833'],
             'outlook' => ['name' => 'Outlook / Microsoft 365', 'color' => '#0078d4', 'tagline' => 'For Microsoft 365 business mailboxes.', 'methods' => ['smtp'],
                 'smtp' => ['host' => 'smtp.office365.com', 'port' => 587, 'secure' => 'tls', 'user_label' => 'Your Microsoft 365 email address', 'pass_label' => 'Password or app password'],
@@ -59,10 +59,10 @@ class MailProviders {
                 'docs' => 'https://docs.cpanel.net/cpanel/email/email-accounts/'],
             'custom' => ['name' => 'Other SMTP server', 'color' => '#64748b', 'tagline' => 'Any provider that gives you SMTP details.', 'methods' => ['smtp'],
                 'smtp' => ['host' => '', 'port' => 587, 'secure' => 'tls', 'user_label' => 'SMTP username', 'pass_label' => 'SMTP password', 'host_editable' => true],
-                'steps' => ['Ask your provider for: SMTP host, port, encryption (TLS/SSL), username and password.', 'Port 587 normally uses STARTTLS, port 465 uses SSL. Some shared hosts block both — try port 2525 or an API provider.'],
+                'steps' => ['Ask your provider for: SMTP host, port, encryption (TLS/SSL), username and password.', 'Port 587 normally uses STARTTLS, port 465 uses SSL. Some shared hosts block both. Try port 2525 or an API provider.'],
                 'docs' => ''],
             'phpmail' => ['name' => 'PHP mail()', 'color' => '#4f5b93', 'tagline' => 'No setup, but emails often land in spam.', 'methods' => ['mail'], 'steps' => ['Uses your server\'s built-in mail function. Works on many shared hosts, but deliverability is poor and some hosts disable it. Use a provider above for real students.'], 'docs' => ''],
-            'log' => ['name' => 'Log only (testing)', 'color' => '#a1a1aa', 'tagline' => 'Nothing is sent — emails are written to a log file.', 'methods' => ['log'], 'steps' => ['Emails are saved to storage/logs/mail-YYYY-MM.log so you can test without sending. Switch to a real provider before inviting students.'], 'docs' => ''],];}
+            'log' => ['name' => 'Log only (testing)', 'color' => '#a1a1aa', 'tagline' => 'Nothing is sent, emails are written to a log file.', 'methods' => ['log'], 'steps' => ['Emails are saved to storage/logs/mail-YYYY-MM.log so you can test without sending. Switch to a real provider before inviting students.'], 'docs' => ''],];}
 
     public static function get(string $key): ?array {
         return self::all()[$key] ?? null;}

@@ -47,8 +47,8 @@ if (!$isNew) {
 <div class="field"><label>Illustration</label><div class="illus-pick"><?php foreach (COURSE_ILLUS as $i): ?><label><input type="radio" name="illustration" value="<?= $i ?>"<?= checked($v('illustration') === $i) ?>><img src="<?= e(asset('img/illus/course-' . $i . '.svg')) ?>" alt="<?= e($i) ?>"></label><?php endforeach; ?></div></div>
 </div>
 <div class="card stack">
-<div class="card-head"><div><h3>Motivational quotes</h3><small class="muted">One per line, optionally “Quote — Author”. A different one shows each day. Leave empty to use the global list.</small></div></div>
-<textarea name="quotes" rows="5" placeholder="Small steps every day. — Anonymous"><?= e($v('quotes')) ?></textarea>
+<div class="card-head"><div><h3>Motivational quotes</h3><small class="muted">One per line, optionally “Quote - Author”. A different one shows each day. Leave empty to use the global list.</small></div></div>
+<textarea name="quotes" rows="5" placeholder="Small steps every day. - Anonymous"><?= e($v('quotes')) ?></textarea>
 </div>
 </div>
 <aside class="stack-lg">

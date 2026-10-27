@@ -119,5 +119,5 @@ class Controller extends Base {
             if ($quiz['require_to_complete']) {
                 Progress::complete((int)$user['id'], $lesson);}
             Hooks::fire('quiz.passed', (int)$user['id'], $quiz, $g);}
-        flash($passed ? 'success' : 'warning', $passed ? 'Quiz passed with ' . $g['percent'] . '% — great job!' : 'You scored ' . $g['percent'] . '%. You need ' . (int)$quiz['pass_percent'] . '% to pass.');
+        flash($passed ? 'success' : 'warning', $passed ? 'Quiz passed with ' . $g['percent'] . '%, great job!' : 'You scored ' . $g['percent'] . '%. You need ' . (int)$quiz['pass_percent'] . '% to pass.');
         redirect($back . '?quiz_result=1#quiz');}}

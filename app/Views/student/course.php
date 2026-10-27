@@ -4,7 +4,7 @@ $title = $course['title'];
 $state = $c['state'];
 $stateMsg = ['pending' => ['clock', 'Your access starts on ' . dtime($c['start']) . '. See you then!'], 'expired' => ['lock', 'Your access to this course ended on ' . dt($enr['expires_at'] ?? null) . '. Contact support if you need more time.'], 'suspended' => ['alert', 'Your access to this course is paused. Please contact support.']][$state] ?? null;
 ?>
-<?php if ($preview): ?><div class="alert alert-info"><?= icon('eye') ?><span>Admin preview — all lessons are unlocked for you.<?= $course['status'] !== 'published' ? ' This course is <b>' . e($course['status']) . '</b> and hidden from students.' : '' ?></span><a class="btn btn-sm btn-ghost" href="<?= e(url('/admin/courses/' . $course['id'] . '/curriculum')) ?>">Edit course</a></div><?php endif; ?>
+<?php if ($preview): ?><div class="alert alert-info"><?= icon('eye') ?><span>Admin preview: all lessons are unlocked for you.<?= $course['status'] !== 'published' ? ' This course is <b>' . e($course['status']) . '</b> and hidden from students.' : '' ?></span><a class="btn btn-sm btn-ghost" href="<?= e(url('/admin/courses/' . $course['id'] . '/curriculum')) ?>">Edit course</a></div><?php endif; ?>
 <section class="course-hero tint-<?= e(course_tint($course)) ?>">
 <div>
 <a href="<?= e(url('/courses')) ?>" class="back-link"><?= icon('arrow-left') ?>My courses</a>
@@ -57,7 +57,7 @@ $stateMsg = ['pending' => ['clock', 'Your access starts on ' . dtime($c['start']
 </div>
 </div>
 <aside class="course-side">
-<?php if ($quote): ?><figure class="quote-card quote-sm"><?= icon('quote', 'quote-ico') ?><blockquote><?= e($quote['text']) ?></blockquote><?php if ($quote['author']): ?><figcaption>— <?= e($quote['author']) ?></figcaption><?php endif; ?></figure><?php endif; ?>
+<?php if ($quote): ?><figure class="quote-card quote-sm"><?= icon('quote', 'quote-ico') ?><blockquote><?= e($quote['text']) ?></blockquote><?php if ($quote['author']): ?><figcaption><?= e($quote['author']) ?></figcaption><?php endif; ?></figure><?php endif; ?>
 <?php if ($c['upcoming'] && $state !== 'expired'): ?>
 <div class="card mt-4"><div class="card-head"><h3><?= icon('calendar') ?> Coming up</h3></div>
 <ul class="timeline"><?php foreach (array_slice($c['upcoming'], 0, 5) as $l): ?><li><span class="tl-dot"></span><div><b><?= e($l['title']) ?></b><small class="unlock"><?= icon('lock') ?> <?= e(dtime($l['unlock_at'])) ?></small></div></li><?php endforeach; ?></ul></div>

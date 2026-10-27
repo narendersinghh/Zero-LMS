@@ -48,7 +48,7 @@ class Controller extends BaseController {
             flash('error', 'The payment was not completed. You can try again.');
             redirect('/c/' . $order['course_slug'] . '/checkout');}
         Payments::markPaid(DB::one('SELECT * FROM {orders} WHERE id = ?', [$order['id']]), $q['razorpay_payment_id']);
-        flash('success', 'Payment successful — welcome to ' . $order['course_title'] . '!');
+        flash('success', 'Payment successful. Welcome to ' . $order['course_title'] . '!');
         redirect(Auth::check() ? '/courses/' . $order['course_slug'] : '/login');}
 
     /** Server-to-server confirmation (configure in Razorpay Dashboard → Webhooks, event payment_link.paid). */

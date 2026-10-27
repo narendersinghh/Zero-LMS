@@ -41,12 +41,13 @@ $healthTxt = $score['bad'] ? $score['bad'] . ' problem' . ($score['bad'] === 1 ?
 <div class="sys-grid">
 <div class="stack-lg">
 <div class="card" id="cron">
-<div class="card-head"><div><h3><?= icon('clock') ?> Scheduled tasks</h3><small class="muted">Sends queued emails, lesson-unlock notifications and expiry reminders.</small></div><span class="badge badge-<?= $cronAge === null ? 'danger' : ($cronAge > 86400 ? 'warning' : 'success') ?>"><?= $cronLast ? e(time_ago($cronLast)) : 'Never run' ?></span></div>
-<div class="cron-box">
+<div class="card-head"><div><h3><?= icon('clock') ?> Scheduled tasks</h3><small class="muted">Queued emails, lesson-unlock notices and expiry reminders are sent automatically in the background. Nothing to set up.</small></div><span class="badge badge-success"><?= icon('check') ?>Automatic</span></div>
+<div class="cron-stat"><span><small class="muted">Last run</small><b><?= $cronLast ? e(time_ago($cronLast)) : 'Starts with the next visit' ?></b></span><span><small class="muted">Emails waiting</small><b><?= (int)$mailPending ?></b></span><form method="post" action="<?= e(url('/admin/system/cron')) ?>"><?= csrf_field() ?><button class="btn btn-ghost btn-sm"><?= icon('play') ?>Run now</button></form></div>
+<details class="cron-adv"><summary>Optional: real cron job for very quiet sites</summary>
+<p class="small muted">Tasks run after page visits. If your site can go hours without a visitor and you want emails sent on the dot, add one of these. It is optional.</p>
 <div class="field"><label>cPanel → Cron Jobs (every 5 minutes)</label><div class="copy-box"><code><?= e($cronCmd) ?></code><button type="button" class="btn-icon" data-copy="<?= e($cronCmd) ?>" title="Copy"><?= icon('copy') ?></button></div></div>
-<div class="field"><label>No cron access? Ping this secret URL (e.g. cron-job.org)</label><div class="copy-box"><code><?= e($cronUrl) ?></code><button type="button" class="btn-icon" data-copy="<?= e($cronUrl) ?>" title="Copy"><?= icon('copy') ?></button></div></div>
-<p class="small muted m-0"><?= !empty($s['web_cron']) ? 'Backup: tasks also run automatically after page visits.' : 'Web cron is off — a real cron job is required.' ?></p>
-</div>
+<div class="field"><label>Or ping this secret URL (e.g. cron-job.org)</label><div class="copy-box"><code><?= e($cronUrl) ?></code><button type="button" class="btn-icon" data-copy="<?= e($cronUrl) ?>" title="Copy"><?= icon('copy') ?></button></div></div>
+</details>
 </div>
 <div class="card">
 <div class="card-head"><h3><?= icon('settings') ?> Maintenance tools</h3><a href="<?= e(url('/admin/modules')) ?>">Modules (<?= e($moduleCount) ?>) <?= icon('arrow-right') ?></a></div>
@@ -54,7 +55,6 @@ $healthTxt = $score['bad'] ? $score['bad'] . ' problem' . ($score['bad'] === 1 ?
 <form method="post" action="<?= e(url('/admin/system/maintenance')) ?>" class="tool<?= $maintenance ? ' on' : '' ?>"><?= csrf_field() ?><button <?= $maintenance ? '' : 'data-confirm="Turn on maintenance mode? Students will see a maintenance page until you turn it off."' ?>><span class="tool-ico" style="background:var(--p-orange)"><?= icon('lock') ?></span><b><?= $maintenance ? 'Turn off maintenance' : 'Maintenance mode' ?></b><small><?= $maintenance ? 'Site is offline for students right now.' : 'Temporarily take the site offline for students.' ?></small></button></form>
 <form method="post" action="<?= e(url('/admin/system/cache')) ?>" class="tool"><?= csrf_field() ?><button><span class="tool-ico" style="background:var(--p-blue)"><?= icon('refresh') ?></span><b>Clear caches</b><small>Use after editing files or settings by hand.</small></button></form>
 <form method="post" action="<?= e(url('/admin/system/migrate')) ?>" class="tool"><?= csrf_field() ?><button><span class="tool-ico" style="background:var(--p-purple)"><?= icon('layers') ?></span><b>Run migrations<?= $pending ? ' (' . count($pending) . ')' : '' ?></b><small><?= $pending ? 'Database changes are waiting.' : 'Database is up to date.' ?></small></button></form>
-<form method="post" action="<?= e(url('/admin/system/cron')) ?>" class="tool"><?= csrf_field() ?><button><span class="tool-ico" style="background:var(--p-green)"><?= icon('play') ?></span><b>Run scheduled tasks</b><small>Send queued emails & unlock notices now.</small></button></form>
 </div>
 </div>
 </div>

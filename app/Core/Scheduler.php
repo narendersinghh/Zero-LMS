@@ -12,28 +12,62 @@ use App\Services\Progress;
  */
 class Scheduler {
     public static bool $mailQueued = false;
+    private static bool $busy = false;
     private const STAMP = STORAGE_PATH . '/cache/cron.stamp';
 
+    /**
+     * Automatic background work, registered as a shutdown function so it also runs after redirect()/exit.
+     * Order of preference: finish the response (PHP-FPM / LiteSpeed) and work in-process; otherwise fire a
+     * non-blocking request to /cron/run; if that is impossible, send queued emails inline. No server cron needed.
+     */
     public static function afterResponse(): void {
-        if (PHP_SAPI === 'cli' || !Settings::get('web_cron', true)) {
+        if (self::$busy || PHP_SAPI === 'cli' || !App::installed()) {
             return;}
         $due = !is_file(self::STAMP) || filemtime(self::STAMP) < time() - 300;
         if (!$due && !self::$mailQueued) {
             return;}
-        if (function_exists('fastcgi_finish_request')) {
-            Session::close();
-            fastcgi_finish_request();}
-        elseif (!self::$mailQueued) {
-            return;}
+        self::$busy = true;
+        @touch(self::STAMP);
         ignore_user_abort(true);
         @set_time_limit(120);
         try {
-            if ($due) {
-                self::run();}
-            else {
-                Mailer::processQueue(15);}}
+            if (function_exists('fastcgi_finish_request') || function_exists('litespeed_finish_request')) {
+                Session::close();
+                function_exists('fastcgi_finish_request') ? fastcgi_finish_request() : litespeed_finish_request();
+                $due ? self::run() : Mailer::processQueue(25);}
+            elseif (!self::spawn($due ? '' : 'mail')) {
+                Session::close();
+                $due ? self::run() : Mailer::processQueue(5);}}
         catch (\Throwable $e) {
-            Logger::error('Web cron failed: ' . $e->getMessage());}}
+            Logger::error('Background tasks failed: ' . $e->getMessage());}}
+
+    /** Fire-and-forget loopback request to the cron URL (the WordPress-cron technique). */
+    private static function spawn(string $only): bool {
+        $u = parse_url(url('/cron/run', ['key' => self::secret()] + ($only ? ['only' => $only] : []), true));
+        if (empty($u['host'])) {
+            return false;}
+        $tls = ($u['scheme'] ?? 'http') === 'https';
+        $ctx = stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'SNI_enabled' => true, 'peer_name' => $u['host']]]);
+        $fp = @stream_socket_client(($tls ? 'tls://' : 'tcp://') . $u['host'] . ':' . ($u['port'] ?? ($tls ? 443 : 80)), $no, $err, 2, STREAM_CLIENT_CONNECT, $ctx);
+        if (!$fp) {
+            return false;}
+        $ok = (bool)@fwrite($fp, 'GET ' . ($u['path'] ?? '/') . '?' . ($u['query'] ?? '') . " HTTP/1.1\r\nHost: " . $u['host'] . "\r\nUser-Agent: Zeroes-Cron\r\nConnection: close\r\n\r\n");
+        fclose($fp);
+        return $ok;}
+
+    public static function secret(): string {
+        $s = (string)Settings::get('cron_secret', '');
+        if ($s === '') {
+            Settings::set(['cron_secret' => $s = bin2hex(random_bytes(16))]);}
+        return $s;}
+
+    /** Called by /cron/run: the caller may already have disconnected, so keep going. */
+    public static function runRequest(string $only = ''): array {
+        self::$busy = true;
+        ignore_user_abort(true);
+        @set_time_limit(300);
+        Session::close();
+        return $only === 'mail' ? ['emails_sent' => Mailer::processQueue()] : self::run();}
 
     public static function run(): array {
         @touch(self::STAMP);
@@ -84,7 +118,7 @@ class Scheduler {
             if ($sendEmail) {
                 $l = $fresh[0];
                 $q = Courses::quote($c);
-                $emails += (int)Mailer::queueTemplate('lesson_unlocked', $e['email'], $e['name'], ['course_title' => $c['title'], 'lesson_title' => count($fresh) > 1 ? $l['title'] . ' (+' . (count($fresh) - 1) . ' more)' : $l['title'], 'lesson_url' => url('/courses/' . $c['slug'] . '/lessons/' . $l['id'], [], true), 'quote' => $q ? $q['text'] . ($q['author'] ? ' — ' . $q['author'] : '') : '']);}}
+                $emails += (int)Mailer::queueTemplate('lesson_unlocked', $e['email'], $e['name'], ['course_title' => $c['title'], 'lesson_title' => count($fresh) > 1 ? $l['title'] . ' (+' . (count($fresh) - 1) . ' more)' : $l['title'], 'lesson_url' => url('/courses/' . $c['slug'] . '/lessons/' . $l['id'], [], true), 'quote' => $q ? $q['text'] . ($q['author'] ? ' - ' . $q['author'] : '') : '']);}}
         if ($notes) {
             Notifier::many($notes);}
         Settings::set(['cron_unlock_checked' => $now]);

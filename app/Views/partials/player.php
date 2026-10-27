@@ -20,7 +20,8 @@ $progressUrl = url('/lessons/' . $lesson['id'] . '/progress');
 <span class="ptime" data-p="time">0:00 / 0:00</span>
 <span class="grow"></span>
 <?php if ($yt): ?><button type="button" class="pbtn pcc" data-p="cc" aria-label="Captions" aria-pressed="false">CC</button><?php endif; ?>
-<button type="button" class="pbtn pspeed" data-p="speed" aria-label="Playback speed">1×</button>
+<div class="pset"><button type="button" class="pbtn" data-p="settings" aria-label="Quality and speed" aria-haspopup="true" aria-expanded="false"><?= icon('settings') ?><i class="pbadge" data-p="qbadge" hidden></i></button>
+<div class="pmenu" data-p="menu" hidden><div class="pm-sec"><small>Quality</small><div class="pm-opts" data-p="quals"></div></div><div class="pm-sec"><small>Speed</small><div class="pm-opts" data-p="speeds"></div></div></div></div>
 <button type="button" class="pbtn" data-p="fs" aria-label="Fullscreen"><?= icon('maximize') ?></button>
 </div>
 </div>

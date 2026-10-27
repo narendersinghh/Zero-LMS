@@ -32,7 +32,7 @@ $day = \App\Services\Access::releaseDay($lesson);
 </div>
 <?php if (trim(strip_tags($content, '<img>')) !== ''): ?><article class="card prose"><?= $content ?></article><?php endif; ?>
 <?= hook_html('lesson.panels', $lesson, $course, $user, $c['state'] ?? null) ?>
-<?php if ($quote && empty($settings['hide_quote'])): ?><figure class="quote-card quote-sm"><?= icon('quote', 'quote-ico') ?><blockquote><?= e($quote['text']) ?></blockquote><?php if ($quote['author']): ?><figcaption>— <?= e($quote['author']) ?></figcaption><?php endif; ?></figure><?php endif; ?>
+<?php if ($quote && empty($settings['hide_quote'])): ?><figure class="quote-card quote-sm"><?= icon('quote', 'quote-ico') ?><blockquote><?= e($quote['text']) ?></blockquote><?php if ($quote['author']): ?><figcaption><?= e($quote['author']) ?></figcaption><?php endif; ?></figure><?php endif; ?>
 <div class="lesson-nav">
 <?php if ($prev): ?><a class="nav-card" href="<?= e($lessonUrl($prev)) ?>"><?= icon('arrow-left') ?><span><small class="muted">Previous</small><b><?= e(str_limit($prev['title'], 50)) ?></b></span></a><?php else: ?><span></span><?php endif; ?>
 <?php if ($next): ?>

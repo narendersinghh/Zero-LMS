@@ -14,7 +14,7 @@ $cwUrl = fn($x) => url('/courses/' . $x['course']['slug'] . '/lessons/' . $x['le
 <div>
 <span class="eyebrow"><?= icon('sparkles') ?> <?= e($now->format('l, F j')) ?></span>
 <h1><?= e($greet) ?>, <?= e($first) ?> 👋</h1>
-<p class="lead"><?= $stats['courses'] ? ($continue ? 'Pick up right where you left off — a few minutes today keeps your streak alive.' : 'You\'re all caught up. New lessons unlock on schedule.') : 'Your learning space is ready. Explore courses to get started.' ?></p>
+<p class="lead"><?= $stats['courses'] ? ($continue ? 'Pick up right where you left off. A few minutes today keeps your streak alive.' : 'You\'re all caught up. New lessons unlock on schedule.') : 'Your learning space is ready. Explore courses to get started.' ?></p>
 <?php if ($continue): ?>
 <a class="continue" href="<?= e(url('/courses/' . $continue['course']['slug'] . '/lessons/' . $continue['lesson_id'])) ?>">
 <span class="continue-play"><?= icon('play') ?></span>
@@ -83,14 +83,14 @@ $cwUrl = fn($x) => url('/courses/' . $x['course']['slug'] . '/lessons/' . $x['le
 <div class="card">
 <div class="card-head"><h3>Upcoming</h3><span class="muted small"><?= e($now->format('F')) ?></span></div>
 <div class="days"><?php foreach ($days as $d): ?><div class="day<?= $d['today'] ? ' today' : '' ?><?= $d['count'] ? ' has' : '' ?>"><span><?= e($d['dow']) ?></span><b><?= e($d['day']) ?></b></div><?php endforeach; ?></div>
-<?php if (!$upcoming): ?><p class="muted small m-0">No new lessons scheduled — you're all caught up! 🎉</p><?php endif; ?>
+<?php if (!$upcoming): ?><p class="muted small m-0">No new lessons scheduled. You're all caught up! 🎉</p><?php endif; ?>
 <div class="up-list">
 <?php foreach ($upcoming as $l): ?>
 <a class="up" href="<?= e(url('/courses/' . $l['course']['slug'])) ?>"><span class="up-ico" style="background:var(--p-<?= e(course_tint($l['course'])) ?>)"><?= icon('lock') ?></span><span class="grow"><b><?= e($l['title']) ?></b><small><?= e(dtime($l['unlock_at'])) ?> · <span data-countdown="<?= (int)$l['unlock_at'] ?>"><?= e(time_until($l['unlock_at'])) ?></span></small></span></a>
 <?php endforeach; ?>
 </div>
 </div>
-<?php if ($quote): ?><figure class="quote-card"><?= icon('quote', 'quote-ico') ?><blockquote><?= e($quote['text']) ?></blockquote><?php if ($quote['author']): ?><figcaption>— <?= e($quote['author']) ?></figcaption><?php endif; ?></figure><?php endif; ?>
+<?php if ($quote): ?><figure class="quote-card"><?= icon('quote', 'quote-ico') ?><blockquote><?= e($quote['text']) ?></blockquote><?php if ($quote['author']): ?><figcaption><?= e($quote['author']) ?></figcaption><?php endif; ?></figure><?php endif; ?>
 <?= hook_html('dashboard.side', $user) ?>
 </aside>
 </div>

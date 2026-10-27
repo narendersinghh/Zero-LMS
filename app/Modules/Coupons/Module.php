@@ -48,7 +48,7 @@ class Module extends BaseModule {
             $pre = (string)($price['coupon'] ?? '');
             if ($pre === '') {
                 $pre = CouponService::normalize((string)($_GET['coupon'] ?? (((array)Session::get('coupon_prefill', []))[$course['slug']] ?? '')));}
-            $html[] = '<div class="field coupon-field"><label for="coupon">Have a coupon?</label><div class="row gap-2"><input id="coupon" name="coupon" value="' . e($pre) . '" placeholder="Enter code" autocomplete="off" style="text-transform:uppercase"><button type="button" class="btn btn-ghost" data-apply-coupon>Apply</button></div><small data-coupon-msg class="small' . ($price['coupon'] ? ' success">Coupon applied — you save ' . e(money($price['discount'], $price['currency'])) : '">') . '</small></div>';
+            $html[] = '<div class="field coupon-field"><label for="coupon">Have a coupon?</label><div class="row gap-2"><input id="coupon" name="coupon" value="' . e($pre) . '" placeholder="Enter code" autocomplete="off" style="text-transform:uppercase"><button type="button" class="btn btn-ghost" data-apply-coupon>Apply</button></div><small data-coupon-msg class="small' . ($price['coupon'] ? ' success">Coupon applied. You save ' . e(money($price['discount'], $price['currency'])) : '">') . '</small></div>';
             return $html;});
         Hooks::on('order.paid', function ($order, $course = null, $user = null) {
             if (!empty($order['coupon_code'])) {

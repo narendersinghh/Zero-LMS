@@ -34,7 +34,7 @@ $dur = (int)$v('duration');
 <div class="card stack">
 <div class="card-head"><h3>Publish</h3></div>
 <div class="field"><label>Status</label><select name="status"><option value="published"<?= selected('published', $v('status')) ?>>Published</option><option value="draft"<?= selected('draft', $v('status')) ?>>Draft (hidden)</option></select></div>
-<div class="field"><label>Module</label><select name="module_id"><option value="0">— No module —</option><?php foreach ($modules as $m): ?><option value="<?= (int)$m['id'] ?>"<?= selected($m['id'], $v('module_id')) ?>><?= e($m['title']) ?><?= $m['release_day'] ? ' (Day ' . (int)$m['release_day'] . ')' : '' ?></option><?php endforeach; ?></select></div>
+<div class="field"><label>Module</label><select name="module_id"><option value="0">No module</option><?php foreach ($modules as $m): ?><option value="<?= (int)$m['id'] ?>"<?= selected($m['id'], $v('module_id')) ?>><?= e($m['title']) ?><?= $m['release_day'] ? ' (Day ' . (int)$m['release_day'] . ')' : '' ?></option><?php endforeach; ?></select></div>
 <div class="row gap-2 wrap">
 <button class="btn btn-primary grow" name="after" value="<?= $isNew ? 'list' : 'list' ?>"><?= icon('check') ?>Save</button>
 <button class="btn btn-ghost" name="after" value="<?= $isNew ? 'new' : 'stay' ?>"><?= $isNew ? 'Save & add another' : 'Save & stay' ?></button>

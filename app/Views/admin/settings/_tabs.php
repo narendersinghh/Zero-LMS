@@ -3,7 +3,7 @@
 $hub = [
     'Workspace' => [['general', 'General', 'settings', 'Name, timezone, sign-in text'], ['branding', 'Branding & theme', 'palette', 'Logo, colors, fonts'], ['learning', 'Learning', 'sparkles', 'Notifications, quotes']],
     'Delivery' => [['mail', 'Email delivery', 'mail', 'SMTP or API provider'], ['payments', 'Payments', 'key', 'UPI, gateways, sign-up'], ['video', 'Video security', 'shield', 'Playback & streaming']],];
-$more = [['/admin/emails', 'Email templates', 'file', 'emails.manage'], ['/admin/team', 'Team & roles', 'users', 'admins.manage'], ['/admin/modules', 'Modules', 'package', 'modules.manage'], ['/admin/system', 'System & updates', 'refresh', 'settings.system']];
+$more = [['/admin/emails', 'Email templates', 'file', 'emails.manage'], ['/admin/team', 'Team & roles', 'users', 'admins.manage'], ['/admin/logs', 'Audit log', 'activity', 'logs.view']];
 ?>
 <div class="settings-shell">
 <nav class="settings-nav" aria-label="Settings sections">

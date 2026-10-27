@@ -38,7 +38,7 @@ class MailSettingsController extends Controller {
         if ($fromEmail !== '' && !filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
             throw new \InvalidArgumentException('Enter a valid “From” email address.');}
         if (in_array($driver, ['api', 'smtp'], true) && $fromEmail === '') {
-            throw new \InvalidArgumentException('Enter the “From” email address — it must be a sender you verified with ' . $p['name'] . '.');}
+            throw new \InvalidArgumentException('Enter the “From” email address. It must be a sender you verified with ' . $p['name'] . '.');}
         $save = ['mail_provider' => $key, 'mail_driver' => $driver, 'mail_from_email' => $fromEmail, 'mail_from_name' => mb_substr($in('mail_from_name'), 0, 100), 'mail_batch_size' => max(1, min(500, (int)$in('mail_batch_size', '40')))];
         $secret = function (string $field, string $setting, string $label) use ($in, $sameProvider) {
             $v = (string)($_POST[$field] ?? '');
@@ -51,6 +51,8 @@ class MailSettingsController extends Controller {
         $cfg = ['driver' => $driver, 'provider' => $key, 'from' => $fromEmail ?: 'no-reply@' . (parse_url(base_url(), PHP_URL_HOST) ?: 'localhost'), 'from_name' => $save['mail_from_name'] ?: (string)Settings::get('site_name', 'Zeroes')];
         if ($driver === 'api') {
             $cfg['api_key'] = $secret('mail_api_key', 'mail_api_key', $p['api']['key_label']);
+            if ($key === 'brevo' && stripos($cfg['api_key'], 'xsmtpsib-') === 0) {
+                throw new \InvalidArgumentException('That is a Brevo SMTP key. For the API method create an API key (it starts with xkeysib-) in Brevo under SMTP & API → API keys, or switch to the SMTP method.');}
             $save['mail_api_key'] = Crypto::encrypt($cfg['api_key']);
             if (!empty($p['api']['secret_label'])) {
                 $cfg['api_secret'] = $secret('mail_api_secret', 'mail_api_secret', $p['api']['secret_label']);
@@ -84,6 +86,10 @@ class MailSettingsController extends Controller {
             flash('error', $e->getMessage());
             back();}
         Settings::set($save);
+        if ($save['mail_driver'] !== 'log') {
+            // Give emails that failed or waited under the old settings a fresh start; they go out right after this request.
+            DB::run("UPDATE {mail_queue} SET status = 'pending', attempts = 0, send_after = ? WHERE status IN ('pending', 'failed') AND created_at > ?", [now(), gmdate('Y-m-d H:i:s', time() - 7 * 86400)]);
+            \App\Core\Scheduler::$mailQueued = true;}
         Audit::log('settings.mail', 'settings', null, ['provider' => $save['mail_provider'], 'driver' => $save['mail_driver']]);
         $this->ok($save['mail_driver'] === 'log' ? 'Saved. Emails will be written to the log only.' : 'Saved. Emails will be sent with ' . $p['name'] . ($save['mail_driver'] === 'api' ? ' (API)' : ($save['mail_driver'] === 'smtp' ? ' (SMTP)' : '')) . '. Send a test to confirm.');}
 
@@ -105,7 +111,7 @@ class MailSettingsController extends Controller {
             Audit::log('settings.mail_test_failed', 'settings', null, ['provider' => $cfg['provider'], 'error' => substr($e->getMessage(), 0, 200)]);
             json_out(['ok' => false, 'message' => $e->getMessage(), 'tips' => $this->tips($e->getMessage(), $cfg)], 200);}
         Audit::log('settings.mail_test', 'settings', null, ['provider' => $cfg['provider'], 'to' => $to]);
-        json_out(['ok' => true, 'message' => $cfg['driver'] === 'log' ? 'Test written to storage/logs/mail-' . gmdate('Y-m') . '.log (log-only mode — nothing was delivered).' : 'Test email sent to ' . $to . '. Check the inbox (and spam folder). If it looks good, click Save.']);}
+        json_out(['ok' => true, 'message' => $cfg['driver'] === 'log' ? 'Test written to storage/logs/mail-' . gmdate('Y-m') . '.log (log-only mode, nothing was delivered).' : 'Test email sent to ' . $to . '. Check the inbox (and spam folder). If it looks good, click Save.']);}
 
     private function tips(string $err, array $cfg): array {
         $e = strtolower($err);
@@ -115,6 +121,8 @@ class MailSettingsController extends Controller {
         $auth = strpos($e, '535') !== false || strpos($e, 'auth') !== false || strpos($e, '401') !== false || strpos($e, 'key not found') !== false || strpos($e, 'unauthorized') !== false;
         if ($auth) {
             $t[] = 'The username/password or API key was rejected. Copy it again from the provider (no spaces). Gmail needs an App Password, not your normal password.';}
+        if (strpos($e, 'ip address') !== false || strpos($e, 'unrecognised ip') !== false || strpos($e, 'unrecognized ip') !== false) {
+            $t[] = 'Brevo blocks API calls from unknown IP addresses. In Brevo open Security → Authorised IPs and add your server IP, or turn the IP blocking off.';}
         if (!$t && (strpos($e, 'sender') !== false || strpos($e, 'not verified') !== false || strpos($e, '550') !== false || strpos($e, 'from address') !== false)) {
             $t[] = 'Verify the “From” email or your domain with the provider, and make sure SPF/DKIM DNS records are added.';}
         if (strpos($e, 'certificate') !== false || strpos($e, 'starttls') !== false || strpos($e, 'ssl') !== false) {

@@ -26,25 +26,25 @@ class Defaults {
 
     public static function quotes(): array {
         return [
-            'The expert in anything was once a beginner. — Helen Hayes',
+            'The expert in anything was once a beginner. - Helen Hayes',
             'Small daily improvements are the key to staggering long-term results.',
-            'Learning never exhausts the mind. — Leonardo da Vinci',
-            'Success is the sum of small efforts, repeated day in and day out. — Robert Collier',
-            'The beautiful thing about learning is that nobody can take it away from you. — B.B. King',
-            'Don\'t watch the clock; do what it does. Keep going. — Sam Levenson',
-            'An investment in knowledge pays the best interest. — Benjamin Franklin',
-            'You don\'t have to be great to start, but you have to start to be great. — Zig Ziglar',
+            'Learning never exhausts the mind. - Leonardo da Vinci',
+            'Success is the sum of small efforts, repeated day in and day out. - Robert Collier',
+            'The beautiful thing about learning is that nobody can take it away from you. - B.B. King',
+            'Don\'t watch the clock; do what it does. Keep going. - Sam Levenson',
+            'An investment in knowledge pays the best interest. - Benjamin Franklin',
+            'You don\'t have to be great to start, but you have to start to be great. - Zig Ziglar',
             'Discipline is choosing between what you want now and what you want most.',
             'Every lesson completed is a step closer to the person you want to become.',
             'Consistency beats intensity. Show up today.',
-            'The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice. — Brian Herbert',
-            'What we learn with pleasure we never forget. — Alfred Mercier',
+            'The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice. - Brian Herbert',
+            'What we learn with pleasure we never forget. - Alfred Mercier',
             'Progress, not perfection.',
-            'It always seems impossible until it\'s done. — Nelson Mandela',];}
+            'It always seems impossible until it\'s done. - Nelson Mandela',];}
 
     public static function emailTemplates(): array {
         return [
-            'welcome' => ['name' => 'Welcome / account setup', 'subject' => 'Welcome to {{site_name}} — set up your account',
+            'welcome' => ['name' => 'Welcome / account setup', 'subject' => 'Welcome to {{site_name}}: set up your account',
                 'body' => "<h1>Welcome, {{first_name}}!</h1><p>An account has been created for you on <strong>{{site_name}}</strong>{{course_line}}.</p><p>Click the button below to choose your password and start learning. This link expires in {{link_hours}} hours.</p><p class=\"btn-wrap\"><a class=\"btn\" href=\"{{setup_link}}\">Set up my account</a></p><p><strong>How to log in later:</strong><br>Go to <a href=\"{{login_url}}\">{{login_url}}</a> and sign in with <strong>{{email}}</strong> and the password you choose.</p>"],
             'enrolled' => ['name' => 'Added to a course', 'subject' => 'You now have access to {{course_title}}',
                 'body' => "<h1>You're in, {{first_name}}!</h1><p>You've been given access to <strong>{{course_title}}</strong>.</p><p>{{access_line}}</p><p class=\"btn-wrap\"><a class=\"btn\" href=\"{{course_url}}\">Start learning</a></p><p>Sign in at <a href=\"{{login_url}}\">{{login_url}}</a> with <strong>{{email}}</strong>.</p>"],

@@ -19,7 +19,7 @@ $cls = ['paid' => 'success', 'submitted' => 'info', 'pending' => 'warning', 'rej
 <select name="status" data-autosubmit><option value="">All statuses</option><?php foreach (Payments::STATUSES as $k => $v): ?><option value="<?= $k ?>"<?= selected($k, $st) ?>><?= e($v) ?></option><?php endforeach; ?></select>
 <select name="course" data-autosubmit><option value="">All courses</option><?php foreach ($courses as $c): ?><option value="<?= (int)$c['id'] ?>"<?= selected($c['id'], $_GET['course'] ?? '') ?>><?= e($c['title']) ?></option><?php endforeach; ?></select>
 </form>
-<?php if (!$rows): ?><?php partial('empty', ['illus' => 'empty', 'heading' => 'No orders yet', 'text' => 'Share a course link (Courses → Edit → Pricing) — orders appear here as students pay.']); ?>
+<?php if (!$rows): ?><?php partial('empty', ['illus' => 'empty', 'heading' => 'No orders yet', 'text' => 'Share a course link (Courses → Edit → Pricing). Orders appear here as students pay.']); ?>
 <?php else: ?>
 <div class="card p-0"><div class="table-wrap"><table class="table">
 <thead><tr><th>Order</th><th>Student</th><th>Course</th><th>Amount</th><th>Payment</th><th>Status</th><th class="right">Actions</th></tr></thead>

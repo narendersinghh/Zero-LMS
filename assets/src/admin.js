@@ -1,4 +1,4 @@
-/* Zeroes LMS — admin tools: rich editor, chunked uploader, video picker, curriculum drag & drop, live theme preview. */
+/* Zeroes LMS: admin tools: rich editor, chunked uploader, video picker, curriculum drag & drop, live theme preview. */
 (function () {
   'use strict';
   var d = document, $ = function (s, c) { return (c || d).querySelector(s); }, $$ = function (s, c) { return Array.prototype.slice.call((c || d).querySelectorAll(s)); };
@@ -68,7 +68,7 @@
   $$('[data-editor]').forEach(function (wrap) {
     var ta = $('textarea', wrap), bar = d.createElement('div'), area = d.createElement('div'), src = false;
     bar.className = 'ed-bar';
-    var tools = [['b', 'bold', 'B'], ['i', 'italic', 'I'], ['u', 'underline', 'U'], ['|'], ['h2', 'formatBlock:h2', 'H2'], ['h3', 'formatBlock:h3', 'H3'], ['p', 'formatBlock:p', '¶'], ['q', 'formatBlock:blockquote', '❝'], ['|'], ['ul', 'insertUnorderedList', '• List'], ['ol', 'insertOrderedList', '1. List'], ['|'], ['a', 'link', 'Link'], ['img', 'image', 'Image'], ['hr', 'insertHorizontalRule', '—'], ['x', 'removeFormat', 'Clear'], ['|'], ['src', 'source', '</>']];
+    var tools = [['b', 'bold', 'B'], ['i', 'italic', 'I'], ['u', 'underline', 'U'], ['|'], ['h2', 'formatBlock:h2', 'H2'], ['h3', 'formatBlock:h3', 'H3'], ['p', 'formatBlock:p', '¶'], ['q', 'formatBlock:blockquote', '❝'], ['|'], ['ul', 'insertUnorderedList', '• List'], ['ol', 'insertOrderedList', '1. List'], ['|'], ['a', 'link', 'Link'], ['img', 'image', 'Image'], ['hr', 'insertHorizontalRule', 'Line'], ['x', 'removeFormat', 'Clear'], ['|'], ['src', 'source', '</>']];
     tools.forEach(function (t) {
       if (t[0] === '|') { var s = d.createElement('span'); s.className = 'ed-sep'; bar.appendChild(s); return; }
       var b = d.createElement('button'); b.type = 'button'; b.textContent = t[2]; b.title = t[1]; b.setAttribute('data-cmd', t[1]); bar.appendChild(b);

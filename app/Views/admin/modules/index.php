@@ -8,7 +8,7 @@ $list = $cat !== '' ? array_filter($modules, fn($m) => ($m['category'] ?? 'Other
 <section class="mod-intro">
 <div>
 <h2>Add features when you need them</h2>
-<p>Modules are optional features — turn them on or off at any time. Disabling a module hides it from students and staff but keeps its data, so you can switch it back on later.</p>
+<p>Modules are optional features. Turn them on or off at any time. Disabling a module hides it from students and staff but keeps its data, so you can switch it back on later.</p>
 <div class="mod-stats"><span><?= $onCount ?> of <?= count($modules) ?> enabled</span><span><?= count($cats) ?> categories</span></div>
 </div>
 <?= illus('explore') ?>

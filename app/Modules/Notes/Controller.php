@@ -39,7 +39,7 @@ class Controller extends Base {
         return view('notes/index', ['groups' => $groups, 'q' => $q]);}
 
     public function export() {
-        $out = 'My notes — ' . setting('site_name') . "\nExported " . dtime(now()) . "\n";
+        $out = 'My notes: ' . setting('site_name') . "\nExported " . dtime(now()) . "\n";
         $course = null;
         foreach ($this->rows() as $r) {
             if ($course !== $r['course_title']) {

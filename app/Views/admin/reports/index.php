@@ -8,7 +8,7 @@ $hasData = array_sum(array_column($courses, 'students')) > 0;
 $money = fn($v) => money($v);
 $deltaBadge = function ($d, bool $pp = false) {
     if ($d === null) {
-        return '<span class="rp-delta flat">—</span>';}
+        return '<span class="rp-delta flat">-</span>';}
     $cls = $d > 0 ? 'up' : ($d < 0 ? 'down' : 'flat');
     return '<span class="rp-delta ' . $cls . '">' . ($d > 0 ? '▲ ' : ($d < 0 ? '▼ ' : '')) . e(abs($d)) . ($pp ? ' pts' : '%') . '</span>';};
 $fz = $funnel['enrolled'] ?? 0;
@@ -84,7 +84,7 @@ $completionRate = $fz ? round(($funnel['completed'] ?? 0) / $fz * 100) : 0;
 </div>
 <div class="card">
 <div class="card-head"><div><h3><?= icon('alert') ?> Where students drop off</h3><small class="muted">Biggest fall in viewers compared with the previous lesson</small></div></div>
-<?php if (!$drops): ?><div class="rp-ok"><?= icon('check-circle') ?><span>No drop-off detected — students are keeping pace from lesson to lesson.</span></div><?php endif; ?>
+<?php if (!$drops): ?><div class="rp-ok"><?= icon('check-circle') ?><span>No drop-off detected. Students are keeping pace from lesson to lesson.</span></div><?php endif; ?>
 <ol class="rp-rank">
 <?php foreach ($drops as $l): ?>
 <li><span class="rp-n rp-n-warn">−<?= (int)$l['drop_pct'] ?>%</span><div class="grow"><b><?= e($l['title']) ?></b><small class="muted"><?= e($l['course_title']) ?> · after “<?= e(str_limit($l['from'], 40)) ?>”</small></div><span class="rp-num nowrap"><?= (int)$l['prev_viewers'] ?> → <?= (int)$l['viewers'] ?></span></li>

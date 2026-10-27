@@ -42,7 +42,7 @@ class Progress {
             $n = DB::run('UPDATE {enrollments} SET completed_at = ? WHERE user_id = ? AND course_id = ? AND completed_at IS NULL', [now(), $userId, $courseId])->rowCount();
             if ($n) {
                 $c = DB::one('SELECT title, slug FROM {courses} WHERE id = ?', [$courseId]);
-                Notifier::notify($userId, 'Course completed: ' . ($c['title'] ?? ''), 'Amazing work — you finished every lesson!', '/courses/' . ($c['slug'] ?? ''), 'achievement');
+                Notifier::notify($userId, 'Course completed: ' . ($c['title'] ?? ''), 'Amazing work, you finished every lesson!', '/courses/' . ($c['slug'] ?? ''), 'achievement');
                 Hooks::fire('course.completed', $userId, $courseId);}}}
 
     /** @return array<int, array{total:int, completed:int, percent:int}> */

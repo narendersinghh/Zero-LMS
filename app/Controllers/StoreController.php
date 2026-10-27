@@ -93,7 +93,7 @@ class StoreController extends Controller {
         if (Users::byEmail($d['email'])) {
             flash('error', 'An account with this email already exists. Please sign in to continue.');
             \App\Core\Session::set('_intended', $_SERVER['HTTP_REFERER'] ?? '');
-            back(['email' => 'Account exists — sign in instead.']);}
+            back(['email' => 'Account exists. Sign in instead.']);}
         $id = Users::create(['name' => $d['name'], 'email' => $d['email'], 'phone' => $d['phone'] ?: null, 'password' => $d['password']]);
         DB::update('users', ['signup_source' => $source, 'email_verified_at' => null], 'id = ?', [$id]);
         $u = Users::find($id);
@@ -129,7 +129,7 @@ class StoreController extends Controller {
     public function pay(string $ref) {
         $o = $this->ownOrder($ref);
         if ($o['status'] === 'paid') {
-            flash('success', 'Payment confirmed — your access is active.');
+            flash('success', 'Payment confirmed. Your access is active.');
             redirect('/courses/' . $o['course_slug']);}
         if ($o['gateway'] !== 'upi') {
             $gw = Payments::gateways()[$o['gateway']] ?? null;

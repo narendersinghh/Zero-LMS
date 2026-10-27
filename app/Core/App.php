@@ -48,8 +48,8 @@ class App {
         Hooks::fire('app.routes', $this->router);
         if (is_file(STORAGE_PATH . '/maintenance') && !Auth::isStaff() && !preg_match('#^/(login|logout|password)#', $path)) {
             throw new HttpException(503, 'We are performing scheduled maintenance. Please check back shortly.');}
-        $this->dispatch();
-        Scheduler::afterResponse();}
+        register_shutdown_function([Scheduler::class, 'afterResponse']);
+        $this->dispatch();}
 
     private function dispatch(): void {
         $out = $this->router->dispatch($this->request);

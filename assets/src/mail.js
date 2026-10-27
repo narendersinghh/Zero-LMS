@@ -1,4 +1,4 @@
-/* Zeroes LMS — Email delivery settings: provider-aware fields + "send a test". */
+/* Zeroes LMS: Email delivery settings: provider-aware fields + "send a test". */
 (function () {
   'use strict';
   var f = document.querySelector('[data-mail-form]');
@@ -13,7 +13,7 @@
     var real = p.m.indexOf('api') > -1 || p.m.indexOf('smtp') > -1;
     if (changedProvider && p.m.indexOf('api') > -1) { var a = q('[name="mail_method"][value="api"]'); if (a) { a.checked = true; } }
     var m = method(p);
-    show(q('[data-connect]'), real);
+    qa('[data-connect]').forEach(function (n) { n.hidden = !real; });
     show(q('[data-nosetup]'), !real);
     qa('[data-pname]').forEach(function (n) { n.textContent = p.n; });
     show(q('[data-method-wrap]'), p.m.indexOf('api') > -1 && p.m.indexOf('smtp') > -1);

@@ -14,8 +14,7 @@ use App\Core\Updater;
 
 class SystemController extends Controller {
     public function index() {
-        if (!Settings::get('cron_secret')) {
-            Settings::set(['cron_secret' => bin2hex(random_bytes(16))]);}
+        Scheduler::secret();
         $s = Settings::all();
         $cronLast = (string)($s['cron_last_run'] ?? '');
         $cronAge = $cronLast ? time() - strtotime($cronLast . ' UTC') : null;
@@ -38,15 +37,15 @@ class SystemController extends Controller {
             [PHP_VERSION_ID >= 80100 ? 'ok' : 'warn', 'PHP ' . PHP_VERSION, PHP_VERSION_ID >= 80100 ? 'Supported version' : 'Works, but PHP 8.1+ is recommended'],
             ['ok', 'Database', (string)DB::val('SELECT VERSION()')],
             [$notWritable ? 'bad' : 'ok', 'Storage folders', $notWritable ? 'Not writable: ' . implode(', ', $notWritable) : 'storage/ and uploads/ are writable'],
-            [$codeWritable ? 'ok' : 'warn', 'Code folders', $codeWritable ? 'Writable — one-click updates can replace files' : 'app/ or assets/ not writable — updates need write access'],
-            [class_exists('ZipArchive') ? 'ok' : 'bad', 'Zip extension', class_exists('ZipArchive') ? 'Available for updates & backups' : 'Missing — updates and backups need it'],
-            [function_exists('curl_init') ? 'ok' : 'bad', 'cURL extension', function_exists('curl_init') ? 'Available for GitHub & email APIs' : 'Missing — needed for updates'],
-            [$opcache ? 'ok' : 'warn', 'OPcache', $opcache ? 'Enabled — faster page loads' : 'Off — ask your host to enable it for speed'],
-            [$cronAge === null ? 'bad' : ($cronAge > 86400 ? 'warn' : 'ok'), 'Scheduled tasks', $cronAge === null ? 'Never run — set up the cron job below' : 'Last run ' . time_ago($cronLast)],
-            [$driver === 'log' ? 'warn' : 'ok', 'Email delivery', $driver === 'log' ? 'Log only — emails are not sent' : 'Sending via ' . strtoupper($driver)],
-            [$maintenance ? 'warn' : 'ok', 'Maintenance mode', $maintenance ? 'ON — students cannot access the site' : 'Off — site is live'],
+            [$codeWritable ? 'ok' : 'warn', 'Code folders', $codeWritable ? 'Writable, one-click updates can replace files' : 'app/ or assets/ not writable, updates need write access'],
+            [class_exists('ZipArchive') ? 'ok' : 'bad', 'Zip extension', class_exists('ZipArchive') ? 'Available for updates & backups' : 'Missing, updates and backups need it'],
+            [function_exists('curl_init') ? 'ok' : 'bad', 'cURL extension', function_exists('curl_init') ? 'Available for GitHub & email APIs' : 'Missing, needed for updates'],
+            [$opcache ? 'ok' : 'warn', 'OPcache', $opcache ? 'Enabled, faster page loads' : 'Off. Ask your host to enable it for speed'],
+            [$cronAge !== null && $cronAge > 86400 ? 'warn' : 'ok', 'Scheduled tasks', $cronAge === null ? 'Automatic, starts with the next visit' : 'Automatic, last run ' . time_ago($cronLast)],
+            [$driver === 'log' ? 'warn' : 'ok', 'Email delivery', $driver === 'log' ? 'Log only, emails are not sent' : 'Sending via ' . strtoupper($driver)],
+            [$maintenance ? 'warn' : 'ok', 'Maintenance mode', $maintenance ? 'ON, students cannot access the site' : 'Off, site is live'],
             [$free !== false && $free < 2 * 1073741824 ? 'warn' : 'ok', 'Video storage', human_size($videoBytes) . ' used' . ($free !== false ? ' · ' . human_size($free) . ' free' : '')],
-            [$pending ? 'warn' : 'ok', 'Database migrations', $pending ? count($pending) . ' pending — run them below' : 'Up to date'],
+            [$pending ? 'warn' : 'ok', 'Database migrations', $pending ? count($pending) . ' pending, run them below' : 'Up to date'],
             ['ok', 'Upload limit', human_size(\App\Core\Uploads::maxUploadBytes()) . ' per request (videos upload in chunks)'],
             [ini_get('memory_limit') === '-1' || (int)ini_get('memory_limit') >= 128 ? 'ok' : 'warn', 'Memory limit', ini_get('memory_limit') === '-1' ? 'Unlimited' : (string)ini_get('memory_limit')],];
         $score = ['ok' => 0, 'warn' => 0, 'bad' => 0];
@@ -54,7 +53,7 @@ class SystemController extends Controller {
             $score[$h[0]]++;}
         return view('admin/system/index', ['health' => $health, 'score' => $score, 'backups' => Updater::backups(), 'last' => Settings::get('update_last_result'), 'lastCheck' => Settings::get('update_last_check'),
             'pending' => $pending, 'maintenance' => $maintenance, 's' => $s, 'version' => App::version(), 'cronAge' => $cronAge, 'cronLast' => $cronLast,
-            'moduleCount' => count(ModuleManager::enabled()) . '/' . count(ModuleManager::discover())]);}
+            'mailPending' => (int)DB::val("SELECT COUNT(*) FROM {mail_queue} WHERE status = 'pending'"), 'moduleCount' => count(ModuleManager::enabled()) . '/' . count(ModuleManager::discover())]);}
 
     public function check() {
         try {
@@ -107,7 +106,7 @@ class SystemController extends Controller {
         $on = !is_file(STORAGE_PATH . '/maintenance');
         Updater::maintenance($on);
         Audit::log('system.maintenance', null, null, ['on' => $on]);
-        $this->ok($on ? 'Maintenance mode enabled — only staff can access the site.' : 'Maintenance mode disabled.');}
+        $this->ok($on ? 'Maintenance mode enabled. Only staff can access the site.' : 'Maintenance mode disabled.');}
 
     public function cron() {
         $r = Scheduler::run();
