@@ -16,7 +16,7 @@ if (!$isNew) {
 <div class="card-head"><h3>Course details</h3></div>
 <div class="field"><label for="title">Title</label><input id="title" name="title" value="<?= e($v('title')) ?>" required maxlength="200" data-slug-source><?= field_error('title') ?></div>
 <div class="field"><label for="subtitle">Subtitle</label><input id="subtitle" name="subtitle" value="<?= e($v('subtitle')) ?>" maxlength="255" placeholder="A one-line promise of what students will achieve"></div>
-<div class="field"><label>Description</label><div class="editor" data-editor><textarea name="description" hidden><?= e($v('description')) ?></textarea></div></div>
+<div class="field"><label>Description</label><div class="editor" data-editor data-upload="<?= e(url('/admin/editor/upload')) ?>"><textarea name="description" hidden><?= e($v('description')) ?></textarea></div></div>
 <div class="grid-2">
 <div class="field"><label for="category">Category</label><input id="category" name="category" value="<?= e($v('category')) ?>" maxlength="100" placeholder="e.g. Webinar bonus"></div>
 <div class="field"><label for="instructor_name">Instructor</label><input id="instructor_name" name="instructor_name" value="<?= e($v('instructor_name')) ?>" maxlength="150"></div>

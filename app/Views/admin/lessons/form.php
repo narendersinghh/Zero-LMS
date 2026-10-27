@@ -28,7 +28,7 @@ $dur = (int)$v('duration');
 </div>
 <div class="field" data-show-when="type=embed"><label>Embed URL</label><input type="url" name="embed_url" value="<?= e(old('embed_url', $settings['embed_url'] ?? '')) ?>" placeholder="https://…"><small class="hint">Any embeddable https page (Loom, Google Slides, Typeform…).</small><?= field_error('embed_url') ?></div>
 <div class="field"><label>Short summary</label><input name="summary" value="<?= e($v('summary')) ?>" maxlength="500" placeholder="Shown under the title and in lists"></div>
-<div class="field"><label>Lesson content / notes</label><div class="editor" data-editor><textarea name="content" hidden><?= e($v('content')) ?></textarea></div></div>
+<div class="field"><label>Lesson content / notes</label><div class="editor" data-editor data-upload="<?= e(url('/admin/editor/upload')) ?>"><textarea name="content" hidden><?= e($v('content')) ?></textarea></div><small class="hint">Add images, PDFs and other files with the Image and File buttons, or drag them into the editor. Files open only for signed-in students.</small></div>
 </div>
 </div>
 <aside class="stack-lg">

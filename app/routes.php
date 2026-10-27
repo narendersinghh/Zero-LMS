@@ -41,6 +41,7 @@ $r->group('', ['auth'], function ($r) {
     $r->post('/lessons/{id}/complete', 'LessonController@complete');
     $r->get('/media/stream/{token}', 'MediaController@stream');
     $r->get('/lessons/{id}/source', 'LessonController@source');
+    $r->get('/files/{name}', 'FileController@show');
     $r->get('/orders', 'StoreController@orders');
     $r->get('/orders/{ref}/pay', 'StoreController@pay');
     $r->post('/orders/{ref}/confirm', 'StoreController@confirm');
@@ -71,6 +72,7 @@ $r->group('/admin', ['auth', 'staff', 'can:admin.access'], function ($r) {
         $r->post('/modules/{id}', 'Admin\CurriculumController@updateModule');
         $r->post('/modules/{id}/delete', 'Admin\CurriculumController@deleteModule');
         $r->post('/courses/{id}/reorder', 'Admin\CurriculumController@reorder');
+        $r->post('/editor/upload', 'FileController@upload');
         $r->get('/courses/{id}/lessons/create', 'Admin\LessonController@create');
         $r->post('/courses/{id}/lessons', 'Admin\LessonController@store');
         $r->get('/lessons/{id}/edit', 'Admin\LessonController@edit');
