@@ -12,6 +12,8 @@ use App\Services\Progress;
  */
 class Scheduler {
     public static bool $mailQueued = false;
+    /** Named refresh jobs requested during this request (e.g. 'dashboard'), run after the response is sent. */
+    private static array $later = [];
     private static bool $busy = false;
     private const STAMP = STORAGE_PATH . '/cache/cron.stamp';
 
@@ -24,20 +26,21 @@ class Scheduler {
         if (self::$busy || PHP_SAPI === 'cli' || !App::installed()) {
             return;}
         $due = !is_file(self::STAMP) || filemtime(self::STAMP) < time() - 300;
-        if (!$due && !self::$mailQueued) {
+        if (!$due && !self::$mailQueued && !self::$later) {
             return;}
         self::$busy = true;
-        @touch(self::STAMP);
+        if ($due) {
+            @touch(self::STAMP);}
         ignore_user_abort(true);
         @set_time_limit(120);
         try {
             if (function_exists('fastcgi_finish_request') || function_exists('litespeed_finish_request')) {
                 Session::close();
                 function_exists('fastcgi_finish_request') ? fastcgi_finish_request() : litespeed_finish_request();
-                $due ? self::run() : Mailer::processQueue(25);}
-            elseif (!self::spawn($due ? '' : 'mail')) {
+                $due ? self::run() : self::runLater();}
+            elseif (!self::spawn($due ? '' : (self::$later ? implode(',', array_keys(self::$later)) : 'mail'))) {
                 Session::close();
-                $due ? self::run() : Mailer::processQueue(5);}}
+                $due ? self::run() : self::runLater();}}
         catch (\Throwable $e) {
             Logger::error('Background tasks failed: ' . $e->getMessage());}}
 
@@ -62,13 +65,32 @@ class Scheduler {
             Settings::set(['cron_secret' => $s = bin2hex(random_bytes(16))]);}
         return $s;}
 
+    /** Ask for a named refresh after the response (deduplicated per request). */
+    public static function later(string $job): void {
+        self::$later[$job] = true;}
+
+    /** Queued emails plus any requested refresh jobs. */
+    private static function runLater(): array {
+        $r = ['emails_sent' => self::$mailQueued ? Mailer::processQueue(25) : 0];
+        if (!empty(self::$later['dashboard'])) {
+            \App\Controllers\Admin\DashboardController::metrics(true);
+            $r['dashboard'] = true;}
+        self::$later = [];
+        return $r;}
+
     /** Called by /cron/run: the caller may already have disconnected, so keep going. */
     public static function runRequest(string $only = ''): array {
         self::$busy = true;
         ignore_user_abort(true);
         @set_time_limit(300);
         Session::close();
-        return $only === 'mail' ? ['emails_sent' => Mailer::processQueue()] : self::run();}
+        if ($only === '') {
+            return self::run();}
+        foreach (explode(',', $only) as $job) {
+            if (in_array($job, ['dashboard'], true)) {
+                self::$later[$job] = true;}}
+        self::$mailQueued = true;
+        return self::runLater();}
 
     public static function run(): array {
         @touch(self::STAMP);

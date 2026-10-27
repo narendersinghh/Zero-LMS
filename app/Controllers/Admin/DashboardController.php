@@ -31,6 +31,7 @@ class DashboardController extends Controller {
      * by the scheduler so the page itself rarely waits on them.
      */
     public static function metrics(bool $fresh = false, ?int &$age = null): array {
+        // Fresh for 5 minutes; up to a day old it is still shown instantly while a refresh runs after the response.
         return Cache::remember('dashboard', 300, function () {
             $now = now();
             $since = gmdate('Y-m-d 00:00:00', time() - 29 * 86400);
@@ -72,7 +73,7 @@ class DashboardController extends Controller {
                 (SELECT COUNT(*) FROM {lessons} l WHERE l.course_id = c.id AND l.status = 'published') AS lesson_count,
                 (SELECT COALESCE(SUM(e.lessons_done), 0) FROM {enrollments} e WHERE e.course_id = c.id) AS done_lessons
                 FROM {courses} c WHERE c.status <> 'archived' ORDER BY enrolled DESC, c.id DESC LIMIT 5");
-            return compact('s', 'kpis', 'chart', 'top');}, $fresh, $age);}
+            return compact('s', 'kpis', 'chart', 'top');}, $fresh, $age, 86400, fn() => \App\Core\Scheduler::later('dashboard'));}
 
     public function index() {
         $m = self::metrics($this->req->bool('fresh'), $age);

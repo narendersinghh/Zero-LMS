@@ -17,6 +17,8 @@ class Module extends BaseModule {
             $r->get('/notes/export', $c . '@export', ['auth']);
             $r->post('/notes/{lessonId}', $c . '@save', ['auth']);});
         Hooks::on('head.assets', function (array $a) {
+            if (is_path('/admin')) {
+                return $a;}
             $a[] = ['css' => module_asset('Notes', 'notes.css')];
             $a[] = ['js' => module_asset('Notes', 'notes.js')];
             return $a;});

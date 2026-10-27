@@ -27,10 +27,16 @@ class Cache {
             if (function_exists('opcache_invalidate')) {
                 @opcache_invalidate($f, true);}}}
 
-    /** Value from cache or computed by $fn (and stored). $age receives the value's age in seconds. */
-    public static function remember(string $key, int $ttl, callable $fn, bool $fresh = false, ?int &$age = null) {
-        if (!$fresh && ($hit = self::get($key, $ttl))) {
+    /**
+     * Value from cache or computed by $fn (and stored). $age receives the value's age in seconds.
+     * With $stale > 0, a value older than $ttl but younger than $stale is still returned at once and $onStale is
+     * called (to refresh it after the response), so visitors never wait for the recalculation.
+     */
+    public static function remember(string $key, int $ttl, callable $fn, bool $fresh = false, ?int &$age = null, int $stale = 0, ?callable $onStale = null) {
+        if (!$fresh && ($hit = self::get($key, max($ttl, $stale)))) {
             $age = time() - $hit[1];
+            if ($age > $ttl && $onStale) {
+                $onStale();}
             return $hit[0];}
         $v = $fn();
         self::put($key, $v);

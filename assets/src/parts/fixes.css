@@ -26,3 +26,4 @@
 .ed-uploading{display:inline-block;padding:.3rem .6rem;border-radius:8px;background:var(--accent-soft);color:var(--accent-text);font-size:.82rem}.ed-area.drop{outline:2px dashed var(--accent);outline-offset:-6px}
 .tile-ring{flex-direction:column!important;align-items:flex-start!important;gap:var(--s2)!important}.tile-ring .ring>b{display:none}.tile-ring .ring .ring-bg{stroke:color-mix(in srgb,var(--ink) 14%,transparent)}
 .tile-ring .ring{box-sizing:border-box;padding:6px;border-radius:12px;background:var(--pastel)}.tile-ring .ring .ring-bg{stroke:rgba(0,0,0,.14)}.tile-ring .ring .ring-fg{stroke:var(--ink)}
+.cv-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}

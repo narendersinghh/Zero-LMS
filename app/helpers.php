@@ -310,7 +310,8 @@ function thumb_url(?string $path, int $w = 640): string {
 
 function course_visual(array $c, string $class = '', int $w = 640): string {
     if (!empty($c['cover_image'])) {
-        return '<div class="cv ' . e($class) . '" style="background-image:url(\'' . e(thumb_url($c['cover_image'], $w)) . '\')"></div>';}
+        // A real <img> so the browser can lazy-load and decode it off the main thread (background images cannot).
+        return '<div class="cv ' . e($class) . '"><img class="cv-img" src="' . e(thumb_url($c['cover_image'], $w)) . '" alt="" loading="lazy" decoding="async"></div>';}
     return '<div class="cv cv-illus tint-' . e(course_tint($c)) . ' ' . e($class) . '"><img src="' . e(course_illus($c)) . '" alt="" loading="lazy"></div>';}
 
 function illus(string $name, string $class = '', string $alt = '', bool $lazy = true): string {

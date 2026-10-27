@@ -54,6 +54,9 @@ class App {
     private function dispatch(): void {
         $out = $this->router->dispatch($this->request);
         if (is_string($out)) {
+            // Staff can see where page time goes in the browser's dev tools (Network → Timing).
+            if (!headers_sent() && Auth::isStaff()) {
+                header(sprintf('Server-Timing: app;dur=%.1f, db;dur=%.1f;desc="%d queries"', (microtime(true) - ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true))) * 1000, DB::$time * 1000, DB::$queries));}
             echo $out;}}
 
     private function sendSecurityHeaders(): void {

@@ -27,6 +27,10 @@ RewriteRule ^ index.php [QSA,L]
   Require all denied
 </FilesMatch>
 
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+</IfModule>
+
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   # Asset URLs carry a ?v= version, so browsers may keep them for a year.

@@ -24,7 +24,8 @@ class Module extends BaseModule {
             $r->post('/quizzes/{id}/submit', $c . '@submit', ['auth']);});
         Hooks::on('head.assets', function (array $a) {
             $a[] = ['css' => module_asset('Quizzes', 'quiz.css')];
-            $a[] = ['js' => module_asset('Quizzes', 'quiz.js')];
+            if (!is_path('/admin')) {
+                $a[] = ['js' => module_asset('Quizzes', 'quiz.js')];}
             return $a;});
         Hooks::on('admin.lesson_panels', function (array $html, array $lesson) {
             $q = Service::quizFor((int)$lesson['id']);

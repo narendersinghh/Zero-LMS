@@ -10,4 +10,4 @@ class SystemCronController extends Controller {
         $secret = (string)Settings::get('cron_secret', '');
         if ($secret === '' || !hash_equals($secret, (string)$this->req->query('key', ''))) {
             abort(403);}
-        json_out(['ok' => true, 'result' => Scheduler::runRequest($this->req->query('only', '') === 'mail' ? 'mail' : '')]);}}
+        json_out(['ok' => true, 'result' => Scheduler::runRequest(preg_replace('/[^a-z,]/', '', (string)$this->req->query('only', '')))]);}}

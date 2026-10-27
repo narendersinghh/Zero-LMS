@@ -9,6 +9,8 @@ use PDO;
 class DB {
     /** Set to [] to record [ms, sql] for each query (development profiling). */
     public static ?array $profile = null;
+    /** Total time spent in SQL this request (seconds), reported to staff in the Server-Timing header. */
+    public static float $time = 0.0;
     private static ?PDO $pdo = null;
     private static string $prefix = '';
     public static int $queries = 0;
@@ -45,11 +47,13 @@ class DB {
         self::$queries++;
         if (self::$profile === null && PHP_SAPI === "cli-server" && getenv("ZX_PROFILE")) {
             self::$profile = [];}
-        $t = self::$profile !== null ? microtime(true) : 0;
+        $t = microtime(true);
         $st = self::pdo()->prepare(self::sql($sql));
         $st->execute(array_values($params));
+        $dt = microtime(true) - $t;
+        self::$time += $dt;
         if (self::$profile !== null) {
-            self::$profile[] = [round((microtime(true) - $t) * 1000, 2), preg_replace('/\s+/', ' ', substr($sql, 0, 160))];}
+            self::$profile[] = [round($dt * 1000, 2), preg_replace('/\s+/', ' ', substr($sql, 0, 160))];}
         return $st;}
 
     public static function all(string $sql, array $params = []): array {

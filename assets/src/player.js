@@ -149,7 +149,7 @@
     function loadApi(cb) {
       if (window.YT && window.YT.Player) { cb(); return; }
       var prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = function () { if (prev) { prev(); } cb(); };
-      var s = d.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.onerror = function () { error('YouTube could not be reached on this network.'); }; d.head.appendChild(s);
+      var s = d.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.onerror = function () { error('The video could not be reached on this network.'); }; d.head.appendChild(s);
     }
     function build(id) {
       var cover = root.querySelector('[data-yt-cover]'), timer = null, ccOn = false, wantQ = '';
@@ -188,7 +188,7 @@
         levels: function () { return ((p.getAvailableQualityLevels && p.getAvailableQualityLevels()) || []).filter(function (k) { return k !== 'auto' && QL[k]; }); },
         qualities: function () { var a = eng.actual(); return [['auto', 'Auto' + (!wantQ && QL[a] && a !== 'auto' ? ' · ' + QL[a].replace(' HD', '').replace(' 4K', '') : '')]].concat(eng.levels().map(function (k) { return [k, QL[k]]; })); },
         quality: function () { return wantQ || 'auto'; }, actual: function () { return p.getPlaybackQuality ? p.getPlaybackQuality() : ''; },
-        note: function () { return !started ? 'Press play to load the qualities YouTube offers for this video.' : (!eng.levels().length ? 'YouTube is choosing the quality automatically for this video.' : ''); },
+        note: function () { return !started ? 'Press play to see the available qualities.' : (!eng.levels().length ? 'Quality is adjusted automatically for this video.' : ''); },
         /* YouTube treats a chosen quality as a request; the label shows what it actually plays. */
         setQuality: function (k) {
           wantQ = k === 'auto' ? '' : k;

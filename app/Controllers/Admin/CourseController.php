@@ -56,6 +56,9 @@ class CourseController extends Controller {
         if ($f = $this->req->file('cover_image')) {
             try {
                 $row['cover_image'] = Uploads::image($f, 'courses', 5120);
+                // Make the card-size copies now so no page view has to resize a large photo.
+                thumb_url($row['cover_image'], 640);
+                thumb_url($row['cover_image'], 320);
                 if ($existing) {
                     Uploads::deletePublic($existing['cover_image']);}}
             catch (\Throwable $e) {
