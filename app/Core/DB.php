@@ -7,6 +7,8 @@ use PDO;
  * Thin PDO wrapper. Table names are written as {table} and receive the configured DB_PREFIX.
  */
 class DB {
+    /** Set to [] to record [ms, sql] for each query (development profiling). */
+    public static ?array $profile = null;
     private static ?PDO $pdo = null;
     private static string $prefix = '';
     public static int $queries = 0;
@@ -41,8 +43,13 @@ class DB {
 
     public static function run(string $sql, array $params = []): \PDOStatement {
         self::$queries++;
+        if (self::$profile === null && PHP_SAPI === "cli-server" && getenv("ZX_PROFILE")) {
+            self::$profile = [];}
+        $t = self::$profile !== null ? microtime(true) : 0;
         $st = self::pdo()->prepare(self::sql($sql));
         $st->execute(array_values($params));
+        if (self::$profile !== null) {
+            self::$profile[] = [round((microtime(true) - $t) * 1000, 2), preg_replace('/\s+/', ' ', substr($sql, 0, 160))];}
         return $st;}
 
     public static function all(string $sql, array $params = []): array {

@@ -94,8 +94,10 @@ class SettingsController extends Controller {
             case 'store':
                 $this->validate(['store_title' => 'required|max:80', 'store_subtitle' => 'max:200']);
                 $v = ['store_enabled' => $this->req->bool('store_enabled'), 'store_home' => $this->req->bool('store_home'), 'store_title' => $in('store_title'), 'store_subtitle' => $in('store_subtitle')];
-                $listed = array_map('intval', (array)$this->req->input('listed', []));
-                // Listing a course in the store is the same flag as its public sales page.
+                $listed = array_values(array_filter(array_map('intval', (array)$this->req->input('listed', []))));
+                // Listing a course in the store is the same flag as its public sales page (course managers only).
+                if (!Auth::can('courses.manage')) {
+                    break;}
                 \App\Core\DB::run("UPDATE {courses} SET is_public = 0 WHERE status <> 'archived'");
                 if ($listed) {
                     \App\Core\DB::run('UPDATE {courses} SET is_public = 1 WHERE id IN (' . \App\Core\DB::in($listed) . ')', $listed);}

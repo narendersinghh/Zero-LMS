@@ -29,7 +29,11 @@ RewriteRule ^ index.php [QSA,L]
 
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
-  <FilesMatch "\.(css|js|svg|png|jpg|jpeg|webp|woff2|ico)$">
+  # Asset URLs carry a ?v= version, so browsers may keep them for a year.
+  <FilesMatch "\.(css|js|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(svg|png|jpg|jpeg|webp|gif|ico)$">
     Header set Cache-Control "public, max-age=2592000"
   </FilesMatch>
 </IfModule>

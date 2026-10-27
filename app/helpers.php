@@ -95,6 +95,10 @@ function redirect(string $to, int $code = 302) {
     header('Location: ' . $to, true, $code);
     exit;}
 
+/** True for a same-site path like "/courses/x"; rejects "//host", "/\\host", schemes and control characters (open redirects). */
+function is_local_path(string $p): bool {
+    return $p !== '' && $p[0] === '/' && !preg_match('#^/[/\\\\]|[\\x00-\\x1f\\x7f\\\\]#', $p);}
+
 function back(array $errors = [], bool $withInput = true) {
     if ($errors) {
         Session::set('_errors', $errors);}
@@ -245,9 +249,19 @@ function money($amount, string $cur = 'INR'): string {
     return \App\Services\Payments\Payments::money($amount, $cur);}
 
 /** Public URL of a module asset: app/Modules/<Module>/assets/<file>. */
+/**
+ * URL for a module's CSS/JS/image. The file is copied once into assets/m/<Module>/ so the web server serves it
+ * directly (no PHP per request); if that folder is not writable it falls back to the /m/ PHP route.
+ */
 function module_asset(string $module, string $file): string {
+    $module = basename($module);
+    $file = basename($file);
     $f = APP_PATH . '/Modules/' . $module . '/assets/' . $file;
-    return url('/m/' . rawurlencode($module) . '/' . $file, ['v' => is_file($f) ? substr((string)filemtime($f), -6) : '1']);}
+    $v = is_file($f) ? substr((string)filemtime($f), -6) : '1';
+    $pub = BASE_PATH . '/assets/m/' . $module . '/' . $file;
+    if (is_file($f) && (is_file($pub) && filemtime($pub) >= filemtime($f) || ((is_dir(dirname($pub)) || @mkdir(dirname($pub), 0755, true)) && @copy($f, $pub)))) {
+        return url('/assets/m/' . rawurlencode($module) . '/' . rawurlencode($file), ['v' => $v]);}
+    return url('/m/' . rawurlencode($module) . '/' . $file, ['v' => $v]);}
 
 const COURSE_TINTS = ['yellow', 'blue', 'pink', 'green', 'purple', 'orange'];
 const COURSE_ILLUS = ['rocket', 'bulb', 'laptop', 'palette', 'chart', 'book'];
@@ -270,6 +284,8 @@ function thumb_url(?string $path, int $w = 640): string {
     if (!$path) {
         return '';}
     $rel = ltrim($path, '/');
+    if (strpos($rel, '..') !== false) {
+        return '';}
     $src = BASE_PATH . '/uploads/' . $rel;
     $out = '_thumbs/' . $w . '/' . preg_replace('/\.\w+$/', '', $rel) . '.jpg';
     $dst = BASE_PATH . '/uploads/' . $out;

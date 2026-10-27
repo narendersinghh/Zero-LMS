@@ -44,7 +44,8 @@ class Html {
                     if (!in_array($n, self::ATTRS, true)) {
                         $c->removeAttribute($attr->nodeName);
                         continue;}
-                    if (in_array($n, ['href', 'src'], true) && !preg_match('#^(https?://|mailto:|/|\#|data:image/(png|jpe?g|gif|webp);)#i', $v)) {
+                    // Allow http(s), mailto, same-site paths and inline raster images; "//host" and "/\\host" would leave the site.
+                    if (in_array($n, ['href', 'src'], true) && (!preg_match('#^(https?://|mailto:|/|\#|data:image/(png|jpe?g|gif|webp);)#i', $v) || preg_match('#^/[/\\\\]#', $v))) {
                         $c->removeAttribute($attr->nodeName);}
                     if ($n === 'style' && preg_match('/(expression|url\s*\(|javascript:|@import|behaviou?r)/i', $v)) {
                         $c->removeAttribute('style');}}

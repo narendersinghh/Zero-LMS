@@ -44,9 +44,9 @@ class EnrollmentController extends Controller {
                 break;}
         $ws = implode(' AND ', $w);
         $pg = new Paginator((int)DB::val("SELECT COUNT(*) FROM {enrollments} e JOIN {users} u ON u.id = e.user_id WHERE $ws", $p), 40);
-        $rows = DB::all("SELECT e.*, u.name, u.email, c.title AS course_title, c.status AS course_status,
-            (SELECT COUNT(*) FROM {lesson_progress} lp WHERE lp.user_id = e.user_id AND lp.course_id = e.course_id AND lp.completed_at IS NOT NULL) AS done,
-            (SELECT COUNT(*) FROM {lessons} l WHERE l.course_id = e.course_id AND l.status = 'published') AS total
+        // STRAIGHT_JOIN: read enrollments newest-first via the primary key instead of scanning users and sorting.
+        $rows = DB::all("SELECT STRAIGHT_JOIN e.*, u.name, u.email, c.title AS course_title, c.status AS course_status,
+            e.lessons_done AS done, (SELECT COUNT(*) FROM {lessons} l WHERE l.course_id = e.course_id AND l.status = 'published') AS total
             FROM {enrollments} e JOIN {users} u ON u.id = e.user_id JOIN {courses} c ON c.id = e.course_id WHERE $ws ORDER BY e.id DESC" . $pg->limitSql(), $p);
         $courses = DB::all('SELECT id, title FROM {courses} ORDER BY title');
         return view('admin/enrollments/index', ['rows' => $rows, 'pg' => $pg, 'courses' => $courses]);}
@@ -70,7 +70,8 @@ class EnrollmentController extends Controller {
         $e = DB::one('SELECT * FROM {enrollments} WHERE id = ?', [(int)$id]) ?? abort(404);
         DB::delete('enrollments', 'id = ?', [$e['id']]);
         if ($this->req->bool('reset_progress')) {
-            DB::delete('lesson_progress', 'user_id = ? AND course_id = ?', [$e['user_id'], $e['course_id']]);}
+            DB::delete('lesson_progress', 'user_id = ? AND course_id = ?', [$e['user_id'], $e['course_id']]);
+            \App\Services\Progress::sync((int)$e['user_id'], (int)$e['course_id']);}
         Audit::log('enrollment.deleted', 'enrollment', (int)$e['id'], ['user_id' => $e['user_id'], 'course_id' => $e['course_id']]);
         $this->ok('Enrollment removed.');}
 

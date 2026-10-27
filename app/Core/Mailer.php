@@ -22,12 +22,30 @@ class Mailer {
 
     /** Queue a templated email. */
     public static function queueTemplate(string $key, string $toEmail, string $toName, array $vars = [], int $delaySeconds = 0): bool {
+        $row = self::templateRow($key, $toEmail, $toName, $vars, $delaySeconds);
+        if (!$row) {
+            return false;}
+        Scheduler::$mailQueued = true;
+        DB::insert('mail_queue', $row);
+        return true;}
+
+    /** A ready-to-insert mail_queue row for a template (null when the template is off), for batch inserts. */
+    public static function templateRow(string $key, string $toEmail, string $toName, array $vars = [], int $delaySeconds = 0): ?array {
+        static $globals = null;
         $tpl = self::template($key);
         if (!$tpl || !(int)$tpl['enabled']) {
-            return false;}
-        $vars = array_merge(self::globals(), ['name' => $toName, 'first_name' => explode(' ', trim($toName) ?: 'there')[0], 'email' => $toEmail], $vars);
-        self::queue($toEmail, $toName, self::fill($tpl['subject'], $vars, false), self::fill($tpl['body'], $vars, true), $delaySeconds, $key);
-        return true;}
+            return null;}
+        $vars = array_merge($globals ??= self::globals(), ['name' => $toName, 'first_name' => explode(' ', trim($toName) ?: 'there')[0], 'email' => $toEmail], $vars);
+        return ['to_email' => $toEmail, 'to_name' => $toName, 'subject' => self::fill($tpl['subject'], $vars, false), 'body' => self::fill($tpl['body'], $vars, true), 'template' => $key,
+            'status' => 'pending', 'attempts' => 0, 'send_after' => gmdate('Y-m-d H:i:s', time() + $delaySeconds), 'created_at' => now()];}
+
+    /** Insert many queued emails in chunks (one statement per 300 rows). */
+    public static function queueRows(array $rows): int {
+        foreach (array_chunk($rows, 300) as $chunk) {
+            DB::insertMany('mail_queue', $chunk);}
+        if ($rows) {
+            Scheduler::$mailQueued = true;}
+        return count($rows);}
 
     public static function queue(string $toEmail, string $toName, string $subject, string $html, int $delaySeconds = 0, string $template = ''): int {
         Scheduler::$mailQueued = true;

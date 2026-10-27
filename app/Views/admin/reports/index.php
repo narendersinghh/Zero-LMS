@@ -16,7 +16,7 @@ $completionRate = $fz ? round(($funnel['completed'] ?? 0) / $fz * 100) : 0;
 ?>
 <div class="rp-page">
 <div class="rp-head">
-<div><p class="muted m-0">Learning, sales and engagement across all courses · daily figures in <?= e($tzName) ?></p></div>
+<div><p class="muted m-0">Learning, sales and engagement across all courses · daily figures in <?= e($tzName) ?> · updated <?= $age < 60 ? 'just now' : (int)floor($age / 60) . ' min ago' ?> · <a href="?days=<?= (int)$days ?>&amp;fresh=1">refresh</a></p></div>
 <nav class="tabs tabs-pill" aria-label="Period"><?php foreach (ReportController::PERIODS as $d => $l): ?><a class="tab<?= $days === $d ? ' active' : '' ?>" href="?days=<?= $d ?>">Last <?= e($l) ?></a><?php endforeach; ?></nav>
 </div>
 

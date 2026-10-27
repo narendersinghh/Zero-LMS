@@ -46,9 +46,29 @@ class FileController extends Controller {
         Audit::log('file.uploaded', null, null, ['file' => $stored, 'name' => $name]);
         json_out(['ok' => true, 'kind' => 'file', 'url' => url('/files/' . $stored), 'name' => $name, 'ext' => $ext, 'size' => human_size((int)$f['size'])]);}
 
+    /** Staff always; students only if the file is attached to a lesson they can open (or to a course description). */
+    private function canOpen(string $name): bool {
+        $user = \App\Core\Auth::user();
+        if (!$user) {
+            return false;}
+        if (\App\Core\Auth::isStaff() || !empty($_SESSION['_files'][$name])) {
+            return true;}
+        $like = '%/files/' . $name . '%';
+        $ok = (bool)\App\Core\DB::val("SELECT 1 FROM {courses} WHERE description LIKE ? AND status = 'published' LIMIT 1", [$like]);
+        if (!$ok) {
+            foreach (\App\Core\DB::all('SELECT * FROM {lessons} WHERE content LIKE ? LIMIT 20', [$like]) as $l) {
+                if (\App\Services\Access::canViewLesson($user, $l)['ok']) {
+                    $ok = true;
+                    break;}}}
+        if ($ok) {
+            $_SESSION['_files'][$name] = 1;}
+        return $ok;}
+
     public function show(string $name) {
         if (!preg_match('/^\d{6}-[a-f0-9]{20}\.([a-z0-9]{2,5})$/', $name, $m) || !isset(self::DOCS[$m[1]]) || !is_file(self::DIR . '/' . $name)) {
             abort(404);}
+        if (!$this->canOpen($name)) {
+            abort(403, 'This file belongs to a lesson you do not have access to.');}
         \App\Core\Session::close();
         $file = self::DIR . '/' . $name;
         $label = is_file($file . '.name') ? (string)file_get_contents($file . '.name') : $name;

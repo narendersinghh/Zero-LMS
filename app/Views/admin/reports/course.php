@@ -54,7 +54,7 @@ $statusCls = ['published' => 'success', 'draft' => 'muted', 'archived' => 'warni
 </div>
 
 <div class="card">
-<div class="card-head"><div><h3>Daily activity</h3><small class="muted">Last 30 days</small></div></div>
+<div class="card-head"><div><h3>Daily activity</h3><small class="muted">Last 30 days · updated <?= $age < 60 ? 'just now' : (int)floor($age / 60) . ' min ago' ?> · <a href="?fresh=1">refresh</a></small></div></div>
 <?= Charts::line([['name' => 'Active learners', 'data' => $series['active'], 'color' => 'var(--accent)', 'area' => true], ['name' => 'Lessons completed', 'data' => $series['completed'], 'color' => '#60a5fa'], ['name' => 'New enrollments', 'data' => $series['enrolled'], 'color' => 'var(--success)', 'dashed' => true]], $labels, ['label' => 'Daily activity']) ?>
 </div>
 

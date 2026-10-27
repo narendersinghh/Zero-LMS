@@ -52,7 +52,7 @@ $shareUrl = $share ? url('/c/' . $share['slug'], [], true) : '';
 <div class="ad-grid">
 <div class="ad-col">
 <div class="card">
-<div class="card-head"><div><h3>Learning activity</h3><small class="muted">Last 4 weeks</small></div><a href="<?= e(url('/admin/reports')) ?>">Reports <?= icon('arrow-right') ?></a></div>
+<div class="card-head"><div><h3>Learning activity</h3><small class="muted">Last 4 weeks · updated <?= $age < 60 ? 'just now' : (int)floor($age / 60) . ' min ago' ?> · <a href="<?= e(url('/admin', ['fresh' => 1])) ?>">refresh</a></small></div><a href="<?= e(url('/admin/reports')) ?>">Reports <?= icon('arrow-right') ?></a></div>
 <?= Charts::line([['name' => 'New enrollments', 'data' => $chart['enrolls'], 'color' => 'var(--accent)', 'area' => true], ['name' => 'Lessons completed', 'data' => $chart['completions'], 'color' => 'var(--success)']], $chart['labels'], ['legend' => true, 'label' => 'Enrollments and lesson completions, last 4 weeks']) ?>
 </div>
 

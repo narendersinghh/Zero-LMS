@@ -10,7 +10,7 @@ use App\Services\Users;
 class AuthController extends Controller {
     public function showLogin() {
         $next = $this->req->str('next');
-        if ($next !== '' && $next[0] === '/' && strpos($next, '//') !== 0) {
+        if (is_local_path($next)) {
             Session::set('_intended', url($next));}
         return view('auth/login');}
 
@@ -37,7 +37,7 @@ class AuthController extends Controller {
         Auth::login($user);
         $to = (string)Session::pull('_intended', '');
         $isStaff = in_array($user['role'], ['super_admin', 'admin'], true);
-        if ($to && strpos($to, '/') === 0 && strpos($to, '//') !== 0 && strpos($to, '/media/') === false) {
+        if (is_local_path($to) && strpos($to, '/media/') === false) {
             header('Location: ' . $to);
             exit;}
         redirect($isStaff ? '/admin' : '/dashboard');}

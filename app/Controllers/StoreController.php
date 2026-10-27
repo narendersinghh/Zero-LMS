@@ -66,6 +66,11 @@ class StoreController extends Controller {
 
     /** JSON price preview (used when a coupon is entered). */
     public function quote(string $slug) {
+        // Throttled so coupon codes cannot be guessed by brute force.
+        $key = 'quote:' . $this->req->ip();
+        if (Throttle::tooMany($key, 40, 10)) {
+            json_out(['error' => 'Too many attempts. Please wait a few minutes.'], 429);}
+        Throttle::hit($key);
         $course = $this->publicCourse($slug);
         $p = Payments::price($course, ['coupon' => $this->req->str('coupon'), 'preview' => true]);
         json_out(['final' => $p['final'], 'final_h' => money($p['final'], $p['currency']), 'discount' => $p['discount'], 'discount_h' => money($p['discount'], $p['currency']), 'label' => $p['label'], 'free' => $p['free'], 'error' => $p['error'] ?? null]);}

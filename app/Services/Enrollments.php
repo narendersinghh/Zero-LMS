@@ -27,6 +27,7 @@ class Enrollments {
             $id = DB::insert('enrollments', ['user_id' => $userId, 'course_id' => (int)$course['id'], 'status' => 'active', 'starts_at' => $start, 'expires_at' => $expires,
                 'source' => $opts['source'] ?? 'manual', 'notes' => $opts['notes'] ?? null, 'created_by' => Auth::id() ?: null, 'created_at' => now(), 'updated_at' => now()]);
             $created = true;
+            Progress::sync($userId, (int)$course['id']);
             Hooks::fire('enrollment.created', $id, $userId, $course);}
         Audit::log($created ? 'enrollment.created' : 'enrollment.reactivated', 'enrollment', $id, ['user_id' => $userId, 'course_id' => (int)$course['id'], 'expires_at' => $expires]);
         Notifier::notify($userId, 'You have access to ' . $course['title'], 'Your course is ready. Jump in and start learning.', '/courses/' . $course['slug'], 'enrollment', 'enroll-' . $course['id'] . '-' . $id . '-' . substr(md5($start), 0, 6));
