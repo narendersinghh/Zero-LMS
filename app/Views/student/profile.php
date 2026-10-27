@@ -51,6 +51,7 @@
 <span class="badge badge-<?= ['active' => 'success', 'pending' => 'info', 'expired' => 'danger', 'suspended' => 'warning'][$c['state']] ?? 'muted' ?>"><?= e(ucfirst($c['state'])) ?></span></div>
 <?php endforeach; ?>
 </div>
+<?= hook_html('profile.panels', $user) ?>
 <div class="card small muted">
 <div class="card-head"><h3>Account</h3></div>
 <dl class="dl"><dt>Member since</dt><dd><?= e(dt($user['created_at'])) ?></dd><dt>Last sign in</dt><dd><?= e(dtime($user['last_login_at'])) ?></dd></dl>

@@ -16,3 +16,4 @@ $fonts = Theme::fontsHref();
 <link rel="stylesheet" href="<?= e(asset('dist/app.min.css')) ?>">
 <style><?= Theme::css() ?></style>
 <script src="<?= e(asset('dist/app.min.js')) ?>" defer></script>
+<?php foreach (\App\Core\Hooks::filter('head.assets', []) as $a): ?><?php if (!empty($a['css'])): ?><link rel="stylesheet" href="<?= e($a['css']) ?>"><?php elseif (!empty($a['js'])): ?><script src="<?= e($a['js']) ?>" defer></script><?php endif; ?><?php endforeach; ?>

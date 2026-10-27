@@ -11,12 +11,12 @@ use App\Core\Settings;
 use App\Core\Uploads;
 
 class SettingsController extends Controller {
-    public const TABS = ['general' => ['General', 'settings'], 'branding' => ['Branding & theme', 'palette'], 'mail' => ['Email delivery', 'mail'], 'video' => ['Video security', 'shield'], 'learning' => ['Learning & notifications', 'sparkles']];
+    public const TABS = ['general' => ['General', 'settings'], 'branding' => ['Branding & theme', 'palette'], 'mail' => ['Email delivery', 'mail'], 'video' => ['Video security', 'shield'], 'learning' => ['Learning & notifications', 'sparkles'], 'payments' => ['Payments', 'key']];
 
     public function show(string $tab) {
         if (!isset(self::TABS[$tab])) {
             abort(404);}
-        if ($tab === 'mail' && !Auth::can('mail.configure')) {
+        if (($tab === 'mail' && !Auth::can('mail.configure')) || ($tab === 'payments' && !Auth::can('payments.configure'))) {
             abort(403);}
         return view('admin/settings/' . $tab, ['tab' => $tab, 's' => Settings::all(), 'tabs' => self::TABS, 'timezones' => \DateTimeZone::listIdentifiers()]);}
 
@@ -79,6 +79,16 @@ class SettingsController extends Controller {
                     $v['bunny_token_key'] = Crypto::encrypt($in('bunny_token_key'));}
                 if ($this->req->str('clear_bunny_key') === '1') {
                     $v['bunny_token_key'] = '';}
+                break;
+            case 'payments':
+                if (!Auth::can('payments.configure')) {
+                    abort(403);}
+                $vpa = $in('upi_vpa');
+                if ($vpa !== '' && !preg_match('/^[A-Za-z0-9._-]{2,}@[A-Za-z0-9.-]{2,}$/', $vpa)) {
+                    flash('error', 'Enter a valid UPI ID, e.g. name@bank.');
+                    back();}
+                $v = ['upi_enabled' => $this->req->bool('upi_enabled'), 'upi_vpa' => $vpa, 'upi_payee_name' => mb_substr($in('upi_payee_name'), 0, 60), 'upi_instructions' => mb_substr($in('upi_instructions'), 0, 1000),
+                    'upi_provisional_access' => $this->req->bool('upi_provisional_access'), 'upi_require_proof' => $this->req->bool('upi_require_proof'), 'allow_registration' => $this->req->bool('allow_registration')];
                 break;
             case 'learning':
                 $quotes = array_values(array_filter(array_map('trim', preg_split('/\r?\n/', (string)$this->req->input('quotes', '')))));

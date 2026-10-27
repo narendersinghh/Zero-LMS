@@ -42,6 +42,18 @@ Large uploads use **chunked uploading** (bypasses `upload_max_filesize`), or upl
 
 **Security** — roles (Super Admin / Admin / Student) with a permission map; bcrypt passwords with rehash; hardened sessions (strict mode, HttpOnly, SameSite, regeneration, idle timeout, UA-bound fingerprint, global logout on password change/suspension); CSRF on every POST; input validation; HTML sanitizer for rich text; login & reset throttling; no user enumeration; security headers + CSP; encrypted secrets (SMTP password, tokens) with AES-256-GCM; CSV-injection-safe exports; audit log of all admin actions; uploads folder can't execute scripts.
 
+## New in 1.1
+
+**Redesigned UI** — sidebar layout on desktop, app-style top bar + bottom tab bar on phones, pastel course cards, hand-drawn line-art illustrations (`assets/img/illus/`), a "Continue watching" row, achievements, learning statistics and an upcoming-lessons calendar. Admin content is centred with quick-action tiles.
+
+**Sell courses with shareable links** — set a price/offer price and enable *Pricing & shareable link* on a course. `https://your-site/c/<course-slug>` is a public sales page; anyone can create an account during checkout and pay. Free courses (or 100%-off coupons) enroll instantly. Students can also sign up at `/register` and browse `/explore`.
+
+**UPI payments (QR + link)** — Settings → Payments: enter your UPI ID. Checkout shows a QR code (generated on the server, no external service) and a "Pay with UPI app" deep link for phones. The student submits the UTR (and optionally a screenshot); you approve it under **Admin → Orders**, which grants access and emails the student. Optional: give access immediately on UTR submission (revoked automatically if rejected). Other gateways plug in through the `payment.gateways` hook — a **Razorpay** module (payment links + signed callback/webhook) is included.
+
+**YouTube without YouTube** — YouTube lessons play through the IFrame API with YouTube's own controls hidden, the iframe cropped (no title bar / logo) and covered by a click shield, so viewers cannot click through to youtube.com. Zeroes' own controls: play/pause, ±10 s, volume, seek, captions (CC), speed, fullscreen; progress and resume work like uploaded videos. The video ID is fetched from an authenticated endpoint rather than printed in the page. ⚠️ A determined user can still find the ID in browser developer tools — for real protection use protected uploads or Bunny Stream.
+
+**Modules** (System → Modules, all enabled by default on this install): Certificates (auto-issued, printable, public verification at `/verify`), Announcements (per course or everyone, notifications + email), Coupons (percent/fixed, limits, expiry, share links `/c/slug?coupon=CODE`), Razorpay, Quizzes (per-lesson MCQ, pass mark, can be required to complete a lesson), Lesson resources (protected downloads/links), Notes (private per-lesson notes with autosave and export).
+
 ## Requirements
 
 PHP 8.0+ with `pdo_mysql`, `openssl`, `mbstring`, `fileinfo`, `dom` (plus `curl` + `zip` for updates, `gd` recommended) · MySQL 5.7+/MariaDB 10.2+ · Apache with `mod_rewrite` (or Nginx, see below).
@@ -113,7 +125,7 @@ uploads/             public images (logos, covers, avatars)
 
 Create `app/Modules/<Name>/module.json` + `Module.php` (extends `App\Core\Module`) and enable it under *System → Modules*. Modules can add routes, admin/student navigation, permissions, views (`Views/`), migrations (`migrations/`) and react to events:
 
-`user.created`, `enrollment.created`, `enrollment.updated`, `lesson.viewed`, `lesson.completed`, `course.completed`, `auth.login`, `cron.run`, filters `lesson.types`, `lesson.content`, `dashboard.widgets`, `admin.nav`, `student.nav`, `auth.permissions`.
+`order.created`, `order.submitted`, `order.paid`, `order.rejected`, `coupon.used`, `user.created`, `enrollment.created`, `enrollment.updated`, `lesson.viewed`, `lesson.completed`, `course.completed`, `auth.login`, `cron.run`, filters `checkout.price`, `payment.gateways`, `lesson.can_complete`, `lesson.manual_complete`, `lesson.types`, `lesson.content`, `dashboard.widgets`, HTML slots `lesson.panels`, `lesson.side`, `course.side`, `course.header_actions`, `dashboard.side`, `profile.panels`, `checkout.fields`, `admin.lesson_panels`, `admin.course_tabs`, `admin.dashboard_widgets`, `head.assets`, `admin.nav`, `student.nav`, `auth.permissions`.
 
 The schema and services were designed so quizzes, assignments, certificates, discussions, downloadable resources, drip emails, payments, coupons, subscriptions, multiple instructors and new content types plug in as modules (e.g. a payments module calls `Enrollments::enroll()` after checkout; certificates listen to `course.completed`). See `app/Modules/Example`.
 

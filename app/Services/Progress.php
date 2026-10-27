@@ -18,7 +18,7 @@ class Progress {
         $position = max(0, min($position, $duration ?: $position));
         $pct = $duration > 0 ? (int)min(100, round($position / $duration * 100)) : 0;
         DB::run('INSERT INTO {lesson_progress} (user_id, lesson_id, course_id, position, duration, percent, last_viewed_at, created_at) VALUES (?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE position = VALUES(position), duration = VALUES(duration), percent = GREATEST(percent, VALUES(percent)), last_viewed_at = VALUES(last_viewed_at)', [$userId, (int)$lesson['id'], (int)$lesson['course_id'], $position, $duration, $pct, now(), now()]);
-        if ($pct >= (int)Settings::get('video_complete_percent', 90)) {
+        if ($pct >= (int)Settings::get('video_complete_percent', 90) && Hooks::filter('lesson.can_complete', true, $lesson, \App\Core\Auth::user() ?? ['role' => 'student', 'id' => $userId])) {
             return self::complete($userId, $lesson);}
         return false;}
 

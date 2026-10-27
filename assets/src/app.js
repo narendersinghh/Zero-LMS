@@ -98,6 +98,25 @@
       Zx.post(cb.getAttribute('data-complete'), done ? { undo: '1' } : {}).then(function (j) { Zx.markComplete(j.completed, j.course); }).catch(function (er) { Zx.toast(er.message, 'error'); }).then(function () { cb.classList.remove('is-loading'); });
     });
   }
+  /* Checkout price preview: any [data-apply-coupon] button re-quotes using input[name=coupon] (coupon module renders these). */
+  var co = $('[data-checkout]');
+  if (co) {
+    co.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-apply-coupon]');
+      if (!b) { return; }
+      e.preventDefault();
+      var inp = co.querySelector('[name="coupon"]'), msg = co.querySelector('[data-coupon-msg]');
+      fetch(co.getAttribute('data-quote') + '?coupon=' + encodeURIComponent(inp ? inp.value.trim() : ''), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } }).then(function (r) { return r.json(); }).then(function (j) {
+        $$('[data-disc-row]', d).forEach(function (r) { r.hidden = !(j.discount > 0); });
+        var dl = $('[data-disc-label]'); if (dl) { dl.textContent = j.label || ''; }
+        var ds = $('[data-disc]'); if (ds) { ds.textContent = j.discount_h; }
+        var t = $('[data-total]'); if (t) { t.textContent = j.free ? 'Free' : j.final_h; }
+        var cta = $('[data-cta]', co); if (cta) { cta.textContent = j.free ? 'Get free access' : 'Continue to pay ' + j.final_h; }
+        var po = $('[data-pay-opts]', co); if (po) { po.hidden = !!j.free; }
+        if (msg) { msg.textContent = j.error || (j.discount > 0 ? 'Coupon applied — you save ' + j.discount_h : ''); msg.className = 'small ' + (j.error ? 'danger' : 'success'); }
+      });
+    });
+  }
   Zx.markComplete = function (done, course) {
     if (!cb) { return; }
     cb.setAttribute('data-done', done ? '1' : '0');

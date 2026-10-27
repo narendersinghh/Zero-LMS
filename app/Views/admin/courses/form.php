@@ -8,7 +8,7 @@ $v = fn($k) => old($k, $course[$k] ?? '');
 if (!$isNew) {
     $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/courses/' . $course['slug'])) . '" target="_blank" rel="noopener">' . icon('eye') . 'Preview</a><a class="btn btn-ghost btn-sm" href="' . e(url('/admin/courses/' . $course['id'] . '/curriculum')) . '">' . icon('layers') . 'Curriculum</a>';}
 ?>
-<?php if (!$isNew): ?><div class="subnav"><a class="active" href="<?= e(url('/admin/courses/' . $course['id'] . '/edit')) ?>">Details & schedule</a><a href="<?= e(url('/admin/courses/' . $course['id'] . '/curriculum')) ?>">Curriculum</a><a href="<?= e(url('/admin/enrollments', ['course' => $course['id']])) ?>">Enrollments</a><a href="<?= e(url('/admin/reports/courses/' . $course['id'])) ?>">Report</a></div><?php endif; ?>
+<?php if (!$isNew): ?><div class="subnav"><a class="active" href="<?= e(url('/admin/courses/' . $course['id'] . '/edit')) ?>">Details & schedule</a><a href="<?= e(url('/admin/courses/' . $course['id'] . '/curriculum')) ?>">Curriculum</a><a href="<?= e(url('/admin/enrollments', ['course' => $course['id']])) ?>">Enrollments</a><a href="<?= e(url('/admin/reports/courses/' . $course['id'])) ?>">Report</a><?php foreach (\App\Core\Hooks::filter('admin.course_tabs', [], $course) as $tl => $tu): ?><a href="<?= e(url($tu)) ?>"><?= e($tl) ?></a><?php endforeach; ?></div><?php endif; ?>
 <form method="post" action="<?= e(url($isNew ? '/admin/courses' : '/admin/courses/' . $course['id'])) ?>" enctype="multipart/form-data" class="form-layout" data-loading>
 <?= csrf_field() ?>
 <div class="stack-lg">
@@ -31,6 +31,20 @@ if (!$isNew) {
 <div class="field"><label for="access_days">Access duration (days)</label><input id="access_days" type="number" min="0" name="access_days" value="<?= e($v('access_days')) ?>" placeholder="Unlimited"><small class="hint">From the student's start date.</small></div>
 </div>
 <div class="field"><label for="end_date">Hard end date</label><input id="end_date" type="date" name="end_date" value="<?= e($v('end_date')) ?>"><small class="hint">Optional. Access ends for everyone on this date, whichever comes first. Applies to new enrollments; extend existing ones in Enrollments.</small><?= field_error('end_date') ?></div>
+</div>
+<div class="card stack">
+<div class="card-head"><div><h3>Pricing & shareable link</h3><small class="muted">Anyone with the link can view the course, create an account and pay (UPI).</small></div><label class="switch" title="Public sales page"><input type="checkbox" name="is_public" value="1"<?= checked($v('is_public')) ?>><span></span></label></div>
+<div class="grid-3">
+<div class="field"><label for="price">Price (₹)</label><input id="price" type="number" min="0" step="1" name="price" value="<?= e($v('price') !== null && $v('price') !== '' ? (float)$v('price') : '') ?>" placeholder="0 = free"></div>
+<div class="field"><label for="sale_price">Offer price (₹)</label><input id="sale_price" type="number" min="0" step="1" name="sale_price" value="<?= e($v('sale_price') !== null && $v('sale_price') !== '' ? (float)$v('sale_price') : '') ?>" placeholder="Optional"><small class="hint">Shown with the original price struck through.</small></div>
+<div class="field"><label>Share link</label><?php if (!$isNew): ?><div class="copy-box"><code><?= e(url('/c/' . $course['slug'], [], true)) ?></code><button type="button" class="btn-icon" data-copy="<?= e(url('/c/' . $course['slug'], [], true)) ?>" title="Copy link"><?= icon('copy') ?></button></div><?php else: ?><small class="hint">Available after saving.</small><?php endif; ?></div>
+</div>
+<div class="field"><label for="highlights">Highlights (one per line)</label><textarea id="highlights" name="highlights" rows="4" placeholder="21 daily video lessons&#10;Watch on any device&#10;Certificate of completion"><?= e($v('highlights')) ?></textarea></div>
+</div>
+<div class="card stack">
+<div class="card-head"><div><h3>Card style</h3><small class="muted">Used when there is no cover image.</small></div></div>
+<div class="field"><label>Color</label><div class="swatches"><?php foreach (COURSE_TINTS as $t): ?><label class="swatch-opt tint-<?= $t ?>"><input type="radio" name="color" value="<?= $t ?>"<?= checked(course_tint($course + ['id' => 0]) === $t && ($v('color') === $t || (!$v('color') && $t === 'yellow'))) ?>><span><?= ucfirst($t) ?></span></label><?php endforeach; ?></div></div>
+<div class="field"><label>Illustration</label><div class="illus-pick"><?php foreach (COURSE_ILLUS as $i): ?><label><input type="radio" name="illustration" value="<?= $i ?>"<?= checked($v('illustration') === $i) ?>><img src="<?= e(asset('img/illus/course-' . $i . '.svg')) ?>" alt="<?= e($i) ?>"></label><?php endforeach; ?></div></div>
 </div>
 <div class="card stack">
 <div class="card-head"><div><h3>Motivational quotes</h3><small class="muted">One per line, optionally “Quote — Author”. A different one shows each day. Leave empty to use the global list.</small></div></div>

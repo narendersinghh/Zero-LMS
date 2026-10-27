@@ -13,6 +13,8 @@ class CourseController extends Controller {
         $enrollments = Learning::enrollments($uid);
         $progress = Progress::forCourses($uid, array_column($enrollments, 'id'));
         $filter = $this->req->str('filter', 'all');
+        if (($q = mb_strtolower($this->req->str('q'))) !== '') {
+            $enrollments = array_values(array_filter($enrollments, fn($c) => mb_strpos(mb_strtolower($c['title'] . ' ' . $c['subtitle'] . ' ' . $c['category']), $q) !== false));}
         return view('student/courses', ['enrollments' => $enrollments, 'progress' => $progress, 'filter' => $filter]);}
 
     public function show(string $slug) {

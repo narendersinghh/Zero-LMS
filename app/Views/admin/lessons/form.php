@@ -58,4 +58,5 @@ $dur = (int)$v('duration');
 </div>
 </aside>
 </form>
+<?php if ($lesson['id']): ?><div class="mt-4"><?= hook_html('admin.lesson_panels', $lesson, $course) ?></div><?php endif; ?>
 <?php partial('video_modal'); ?>

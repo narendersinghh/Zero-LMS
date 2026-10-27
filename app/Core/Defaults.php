@@ -13,7 +13,7 @@ class Defaults {
             'site_name' => 'Zeroes', 'site_tagline' => 'Learn something new, every day.', 'timezone' => 'UTC', 'date_format' => 'M j, Y', 'time_format' => 'g:i A',
             'support_email' => '', 'logo' => '', 'logo_light' => '', 'favicon' => '',
             'heading_font' => 'Inter Tight', 'body_font' => 'Inter', 'heading_weight' => '700', 'base_font_size' => '15',
-            'default_theme' => 'dark', 'allow_theme_toggle' => true, 'radius' => '14', 'button_radius' => '10', 'button_style' => 'solid', 'shadow' => 'soft',
+            'default_theme' => 'dark', 'allow_theme_toggle' => true, 'radius' => '18', 'button_radius' => '12', 'button_style' => 'solid', 'shadow' => 'soft',
             'palette_dark' => self::palettes()['dark'], 'palette_light' => self::palettes()['light'], 'custom_css' => '',
             'login_title' => 'Welcome back', 'login_subtitle' => 'Sign in to continue your learning journey.',
             'mail_driver' => '', 'mail_from_name' => '', 'mail_from_email' => '', 'smtp_host' => '', 'smtp_port' => '587', 'smtp_user' => '', 'smtp_pass' => '', 'smtp_secure' => 'tls',
@@ -22,7 +22,7 @@ class Defaults {
             'bunny_library_id' => '', 'bunny_token_key' => '', 'bunny_cdn_host' => '',
             'quotes' => self::quotes(), 'show_quotes' => true,
             'update_repo' => 'narendersinghh/Zero-LMS', 'update_channel' => 'release', 'update_branch' => 'main', 'update_token' => '', 'installed_commit' => '',
-            'modules_enabled' => [], 'cron_last_run' => '', 'cron_secret' => '', 'web_cron' => true,];}
+            'modules_enabled' => [], 'allow_registration' => true, 'upi_enabled' => true, 'upi_vpa' => '', 'upi_payee_name' => '', 'upi_instructions' => '', 'upi_provisional_access' => false, 'upi_require_proof' => false, 'currency' => 'INR', 'cron_last_run' => '', 'cron_secret' => '', 'web_cron' => true,];}
 
     public static function quotes(): array {
         return [

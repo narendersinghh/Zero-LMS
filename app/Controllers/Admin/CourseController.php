@@ -35,7 +35,7 @@ class CourseController extends Controller {
     private function data(int $id = 0): array {
         $d = $this->validate([
             'title' => 'required|max:200', 'slug' => 'max:140', 'subtitle' => 'max:255', 'category' => 'max:100', 'instructor_name' => 'max:150', 'status' => 'required|in:draft,published,archived',
-            'start_date' => 'date', 'end_date' => 'date', 'access_days' => 'int', 'release_time' => 'max:8', 'sort_order' => 'int',]);
+            'start_date' => 'date', 'end_date' => 'date', 'access_days' => 'int', 'release_time' => 'max:8', 'sort_order' => 'int', 'price' => 'numeric', 'sale_price' => 'numeric', 'color' => 'max:20', 'illustration' => 'max:40',]);
         $slug = $d['slug'] !== '' ? slugify($d['slug']) : '';
         $slug = Courses::uniqueSlug($slug ?: $d['title'], $id);
         if ($d['start_date'] && $d['end_date'] && $d['end_date'] < $d['start_date']) {
@@ -44,7 +44,8 @@ class CourseController extends Controller {
         return ['title' => $d['title'], 'slug' => $slug, 'subtitle' => $d['subtitle'] ?: null, 'description' => Html::clean($this->req->input('description', '')), 'category' => $d['category'] ?: null,
             'instructor_name' => $d['instructor_name'] ?: null, 'status' => $d['status'], 'start_date' => $d['start_date'] ?: null, 'end_date' => $d['end_date'] ?: null,
             'access_days' => $d['access_days'] !== '' && $d['access_days'] !== null && (int)$d['access_days'] > 0 ? (int)$d['access_days'] : null, 'release_time' => $rt,
-            'quotes' => trim((string)$this->req->input('quotes', '')) ?: null, 'sort_order' => (int)$d['sort_order'], 'archived_at' => $d['status'] === 'archived' ? now() : null, 'updated_at' => now()];}
+            'quotes' => trim((string)$this->req->input('quotes', '')) ?: null, 'price' => $d['price'] !== '' && $d['price'] !== null ? max(0, round((float)$d['price'], 2)) : null, 'sale_price' => $d['sale_price'] !== '' && $d['sale_price'] !== null ? max(0, round((float)$d['sale_price'], 2)) : null,
+            'is_public' => $this->req->bool('is_public') ? 1 : 0, 'highlights' => trim((string)$this->req->input('highlights', '')) ?: null, 'color' => in_array($d['color'], COURSE_TINTS, true) ? $d['color'] : null, 'illustration' => in_array($d['illustration'], COURSE_ILLUS, true) ? $d['illustration'] : null, 'sort_order' => (int)$d['sort_order'], 'archived_at' => $d['status'] === 'archived' ? now() : null, 'updated_at' => now()];}
 
     private function cover(array &$row, ?array $existing = null): void {
         if ($this->req->str('remove_cover') === '1' && $existing) {

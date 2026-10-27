@@ -16,6 +16,16 @@ $r->post('/password/reset/{token}', 'AuthController@reset');
 $r->get('/password/setup/{token}', 'AuthController@showReset');
 $r->post('/password/setup/{token}', 'AuthController@reset');
 $r->get('/cron/run', 'SystemCronController@run');
+$r->get('/register', 'StoreController@showRegister', ['guest']);
+$r->post('/register', 'StoreController@register', ['guest']);
+
+// Public catalog & shareable course links (anyone can buy + create an account)
+$r->get('/explore', 'StoreController@catalog');
+$r->get('/c/{slug}', 'StoreController@show');
+$r->get('/c/{slug}/checkout', 'StoreController@checkout');
+$r->post('/c/{slug}/checkout', 'StoreController@placeOrder');
+$r->get('/c/{slug}/quote', 'StoreController@quote');
+$r->get('/m/{module}/{file}', 'StoreController@moduleAsset');
 
 // Student area
 $r->group('', ['auth'], function ($r) {
@@ -26,6 +36,11 @@ $r->group('', ['auth'], function ($r) {
     $r->post('/lessons/{id}/progress', 'LessonController@progress');
     $r->post('/lessons/{id}/complete', 'LessonController@complete');
     $r->get('/media/stream/{token}', 'MediaController@stream');
+    $r->get('/lessons/{id}/source', 'LessonController@source');
+    $r->get('/orders', 'StoreController@orders');
+    $r->get('/orders/{ref}/pay', 'StoreController@pay');
+    $r->post('/orders/{ref}/confirm', 'StoreController@confirm');
+    $r->post('/orders/{ref}/cancel', 'StoreController@cancel');
     $r->get('/notifications', 'NotificationController@index');
     $r->post('/notifications/read-all', 'NotificationController@readAll');
     $r->get('/notifications/{id}/open', 'NotificationController@open');
@@ -81,6 +96,13 @@ $r->group('/admin', ['auth', 'staff', 'can:admin.access'], function ($r) {
         $r->post('/{id}/invite', 'Admin\StudentController@invite');
         $r->post('/{id}/status', 'Admin\StudentController@status');
         $r->post('/{id}/delete', 'Admin\StudentController@destroy');});
+
+    $r->group('/orders', ['can:orders.manage'], function ($r) {
+        $r->get('', 'Admin\\OrderController@index');
+        $r->get('/export', 'Admin\\OrderController@export');
+        $r->post('/{id}/approve', 'Admin\\OrderController@approve');
+        $r->post('/{id}/reject', 'Admin\\OrderController@reject');
+        $r->get('/{id}/proof', 'Admin\\OrderController@proof');});
 
     $r->group('/enrollments', ['can:enrollments.manage'], function ($r) {
         $r->get('', 'Admin\EnrollmentController@index');

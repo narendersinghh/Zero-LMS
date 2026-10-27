@@ -4,13 +4,19 @@ $title = 'Dashboard';
 $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/admin/import')) . '">' . icon('upload') . 'Import CSV</a><a class="btn btn-primary btn-sm" href="' . e(url('/admin/courses/create')) . '">' . icon('plus') . 'New course</a>';
 $max = max(1, max(array_column($chart, 'v') ?: [1]), max(array_column($chart, 'c') ?: [1]));
 ?>
+<?php
+$pendingOrders = can('orders.manage') ? (int)\App\Core\DB::val("SELECT COUNT(*) FROM {orders} WHERE status = 'submitted'") : 0;
+$qa = [['New course', '/admin/courses/create', 'plus', 'yellow', 'courses.manage', 0], ['Upload video', '/admin/videos', 'video', 'blue', 'videos.manage', 0], ['Add student', '/admin/students/create', 'user', 'green', 'students.manage', 0],
+    ['Import CSV', '/admin/import', 'upload', 'purple', 'imports.run', 0], ['Verify payments', '/admin/orders?status=submitted', 'key', 'orange', 'orders.manage', $pendingOrders], ['Branding', '/admin/settings/branding', 'palette', 'pink', 'branding.manage', 0]];
+?>
 <div class="kpis">
-<a class="kpi" href="<?= e(url('/admin/students')) ?>"><span class="kpi-ico"><?= icon('users') ?></span><small>Students</small><b><?= number_format((int)$s['students']) ?></b><span class="kpi-sub success">+<?= (int)$s['new_students'] ?> this week</span></a>
-<a class="kpi" href="<?= e(url('/admin/enrollments', ['state' => 'active'])) ?>"><span class="kpi-ico"><?= icon('layers') ?></span><small>Active enrollments</small><b><?= number_format((int)$s['active_enrollments']) ?></b><span class="kpi-sub"><?= (int)$s['expiring'] ?> expiring in 7 days</span></a>
-<a class="kpi" href="<?= e(url('/admin/reports')) ?>"><span class="kpi-ico"><?= icon('check-circle') ?></span><small>Lessons completed (7d)</small><b><?= number_format((int)$s['completions_week']) ?></b><span class="kpi-sub"><?= (int)$s['active_learners'] ?> active learners</span></a>
-<a class="kpi" href="<?= e(url('/admin/courses')) ?>"><span class="kpi-ico"><?= icon('book') ?></span><small>Published courses</small><b><?= (int)$s['courses'] ?></b><span class="kpi-sub"><?= (int)$s['lessons'] ?> lessons total</span></a>
+<a class="kpi" href="<?= e(url('/admin/students')) ?>"><span class="kpi-ico" style="background:var(--p-yellow)"><?= icon('users') ?></span><small>Students</small><b><?= number_format((int)$s['students']) ?></b><span class="kpi-sub success">+<?= (int)$s['new_students'] ?> this week</span></a>
+<a class="kpi" href="<?= e(url('/admin/enrollments', ['state' => 'active'])) ?>"><span class="kpi-ico" style="background:var(--p-blue)"><?= icon('layers') ?></span><small>Active enrollments</small><b><?= number_format((int)$s['active_enrollments']) ?></b><span class="kpi-sub"><?= (int)$s['expiring'] ?> expiring in 7 days</span></a>
+<a class="kpi" href="<?= e(url('/admin/reports')) ?>"><span class="kpi-ico" style="background:var(--p-green)"><?= icon('check-circle') ?></span><small>Lessons completed (7d)</small><b><?= number_format((int)$s['completions_week']) ?></b><span class="kpi-sub"><?= (int)$s['active_learners'] ?> active learners</span></a>
+<a class="kpi" href="<?= e(url('/admin/courses')) ?>"><span class="kpi-ico" style="background:var(--p-purple)"><?= icon('book') ?></span><small>Published courses</small><b><?= (int)$s['courses'] ?></b><span class="kpi-sub"><?= (int)$s['lessons'] ?> lessons total</span></a>
 </div>
 
+<div class="quick"><?php foreach ($qa as [$l, $h, $i, $t, $perm, $n]): if (!can($perm)) continue; ?><a class="qa" href="<?= e(url($h)) ?>"><span class="qa-ico" style="background:var(--p-<?= $t ?>)"><?= icon($i) ?></span><?= e($l) ?><?php if ($n): ?><span class="count"><?= $n ?></span><?php endif; ?></a><?php endforeach; ?></div>
 <?php if ((int)$s['mail_failed'] || (int)$s['pending_setup']): ?>
 <div class="alerts-row">
 <?php if ((int)$s['mail_failed']): ?><div class="alert alert-danger"><?= icon('mail') ?><span><b><?= (int)$s['mail_failed'] ?></b> email(s) failed to send. Check your mail settings.</span><a class="btn btn-sm btn-ghost" href="<?= e(url('/admin/mail-log', ['status' => 'failed'])) ?>">Review</a></div><?php endif; ?>
@@ -34,6 +40,7 @@ $max = max(1, max(array_column($chart, 'v') ?: [1]), max(array_column($chart, 'c
 </div>
 </div>
 
+<?= hook_html('admin.dashboard_widgets') ?>
 <div class="grid-2 mt-4">
 <div class="card">
 <div class="card-head"><h3>Newest students</h3><a class="small" href="<?= e(url('/admin/students')) ?>">All students</a></div>

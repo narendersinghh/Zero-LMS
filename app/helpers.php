@@ -236,3 +236,36 @@ function selected($a, $b): string {
 
 function checked($v): string {
     return $v ? ' checked' : '';}
+
+/** Render HTML fragments contributed by modules through a filter (e.g. "lesson.panels"). */
+function hook_html(string $name, ...$args): string {
+    return implode('', \App\Core\Hooks::filter($name, [], ...$args));}
+
+function money($amount, string $cur = 'INR'): string {
+    return \App\Services\Payments\Payments::money($amount, $cur);}
+
+/** Public URL of a module asset: app/Modules/<Module>/assets/<file>. */
+function module_asset(string $module, string $file): string {
+    $f = APP_PATH . '/Modules/' . $module . '/assets/' . $file;
+    return url('/m/' . rawurlencode($module) . '/' . $file, ['v' => is_file($f) ? substr((string)filemtime($f), -6) : '1']);}
+
+const COURSE_TINTS = ['yellow', 'blue', 'pink', 'green', 'purple', 'orange'];
+const COURSE_ILLUS = ['rocket', 'bulb', 'laptop', 'palette', 'chart', 'book'];
+
+function course_tint(array $c): string {
+    $t = (string)($c['color'] ?? '');
+    return in_array($t, COURSE_TINTS, true) ? $t : COURSE_TINTS[((int)($c['id'] ?? 0)) % count(COURSE_TINTS)];}
+
+function course_illus(array $c): string {
+    $i = (string)($c['illustration'] ?? '');
+    $i = in_array($i, COURSE_ILLUS, true) ? $i : COURSE_ILLUS[((int)($c['id'] ?? 0)) % count(COURSE_ILLUS)];
+    return asset('img/illus/course-' . $i . '.svg');}
+
+/** Cover image or tinted illustration panel for a course. */
+function course_visual(array $c, string $class = ''): string {
+    if (!empty($c['cover_image'])) {
+        return '<div class="cv ' . e($class) . '" style="background-image:url(\'' . e(upload_url($c['cover_image'])) . '\')"></div>';}
+    return '<div class="cv cv-illus tint-' . e(course_tint($c)) . ' ' . e($class) . '"><img src="' . e(course_illus($c)) . '" alt="" loading="lazy"></div>';}
+
+function illus(string $name, string $class = '', string $alt = ''): string {
+    return '<img class="illus ' . e($class) . '" src="' . e(asset('img/illus/' . $name . '.svg')) . '" alt="' . e($alt) . '" loading="lazy">';}

@@ -9,6 +9,9 @@ use App\Services\Users;
 
 class AuthController extends Controller {
     public function showLogin() {
+        $next = $this->req->str('next');
+        if ($next !== '' && $next[0] === '/' && strpos($next, '//') !== 0) {
+            Session::set('_intended', url($next));}
         return view('auth/login');}
 
     public function login() {

@@ -53,7 +53,8 @@ class Router {
         throw new HttpException($allowed ? 405 : 404);}
 
     private function runMiddleware(array $mws, Request $req): void {
-        if ($req->isPost()) {
+        // Server-to-server endpoints (payment webhooks) opt out with the 'nocsrf' middleware and must verify their own signatures.
+        if ($req->isPost() && !in_array('nocsrf', $mws, true)) {
             Csrf::verify($req);}
         foreach ($mws as $mw) {
             [$name, $arg] = array_pad(explode(':', $mw, 2), 2, null);
@@ -76,6 +77,8 @@ class Router {
                 case 'can':
                     if (!Auth::can((string)$arg)) {
                         throw new HttpException(403);}
+                    break;
+                case 'nocsrf':
                     break;
                 default:
                     Hooks::fire('middleware.' . $name, $req, $arg);}}}

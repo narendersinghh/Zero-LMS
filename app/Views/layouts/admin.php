@@ -5,9 +5,10 @@ $u = auth();
 $groups = [
     'Overview' => [['Dashboard', '/admin', 'grid', 'admin.access'], ['Reports', '/admin/reports', 'chart', 'reports.view']],
     'Content' => [['Courses', '/admin/courses', 'book', 'courses.manage'], ['Videos', '/admin/videos', 'video', 'videos.manage']],
-    'People' => [['Students', '/admin/students', 'users', 'students.manage'], ['Enrollments', '/admin/enrollments', 'layers', 'enrollments.manage'], ['CSV import', '/admin/import', 'upload', 'imports.run'], ['Team', '/admin/team', 'shield', 'admins.manage']],
+    'People' => [['Students', '/admin/students', 'users', 'students.manage'], ['Enrollments', '/admin/enrollments', 'layers', 'enrollments.manage'], ['Orders', '/admin/orders', 'key', 'orders.manage'], ['CSV import', '/admin/import', 'upload', 'imports.run'], ['Team', '/admin/team', 'shield', 'admins.manage']],
     'Configure' => [['Email templates', '/admin/emails', 'mail', 'emails.manage'], ['Settings', '/admin/settings', 'settings', 'branding.manage'], ['Audit log', '/admin/logs', 'activity', 'logs.view'], ['System & updates', '/admin/system', 'package', 'settings.system']],];
 $extra = Hooks::filter('admin.nav', []);
+$badges = ['/admin/orders' => can('orders.manage') ? (int)\App\Core\DB::val("SELECT COUNT(*) FROM {orders} WHERE status = 'submitted'") : 0];
 usort($extra, fn($a, $b) => ($a['order'] ?? 50) <=> ($b['order'] ?? 50));
 foreach ($extra as $x) {
     $groups['Modules'][] = [$x['label'], $x['url'], $x['icon'] ?? 'package', $x['perm'] ?? 'admin.access'];}
@@ -22,7 +23,7 @@ foreach ($extra as $x) {
 <?php foreach ($groups as $g => $items): $vis = array_filter($items, fn($i) => can($i[3])); if (!$vis) continue; ?>
 <div class="sidenav-group"><span class="sidenav-label"><?= e($g) ?></span>
 <?php foreach ($vis as $i): $active = $i[1] === '/admin' ? is_path('/admin') && app()->request()->path() === '/admin' : is_path($i[1]); ?>
-<a href="<?= e(url($i[1])) ?>" class="<?= $active ? 'active' : '' ?>"><?= icon($i[2]) ?><span><?= e($i[0]) ?></span></a>
+<a href="<?= e(url($i[1])) ?>" class="<?= $active ? 'active' : '' ?>"><?= icon($i[2]) ?><span><?= e($i[0]) ?></span><?php if (!empty($badges[$i[1]])): ?><span class="count"><?= (int)$badges[$i[1]] ?></span><?php endif; ?></a>
 <?php endforeach; ?></div>
 <?php endforeach; ?>
 </nav>
@@ -30,7 +31,7 @@ foreach ($extra as $x) {
 </aside>
 <div class="sidebar-backdrop" data-sidebar-close></div>
 <div class="admin-main">
-<header class="admin-top">
+<header class="admin-top"><div class="admin-top-in">
 <button type="button" class="btn-icon menu-btn" data-sidebar-toggle aria-label="Open menu"><?= icon('menu') ?></button>
 <div class="admin-title"><?php if (!empty($crumbs)): ?><nav class="crumbs" aria-label="Breadcrumb"><?php foreach ($crumbs as $label => $href): ?><a href="<?= e(url($href)) ?>"><?= e($label) ?></a><?= icon('chevron-right') ?><?php endforeach; ?></nav><?php endif; ?><h1><?= e($title ?? 'Dashboard') ?></h1></div>
 <div class="topbar-actions">
@@ -46,7 +47,7 @@ foreach ($extra as $x) {
 </div>
 </div>
 </div>
-</header>
+</div></header>
 <main id="main" class="admin-content">
 <?php if (is_file(STORAGE_PATH . '/maintenance')): ?><div class="alert alert-warning"><?= icon('alert') ?><span>Maintenance mode is on — students cannot access the site.</span></div><?php endif; ?>
 <?php partial('flash'); ?>
