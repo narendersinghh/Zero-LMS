@@ -39,18 +39,20 @@
     Zx.post(progressUrl, { position: pos, duration: Math.floor(dur) }).then(function (j) { if (j.completed && !done) { done = true; Zx.markComplete(true); } }).catch(function () {});
   }
   function idle() { root.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(function () { if (root.classList.contains('playing') && q('menu').hidden) { root.classList.add('idle'); } }, 2600); }
-  /* Quality + speed menu. YouTube reports its renditions; uploads play the original file. */
+  /* Quality + speed menu. Engines return [[key, label], ...] for qualities, the current key and an optional note. */
   var QL = { hd2160: '2160p 4K', hd1440: '1440p', hd1080: '1080p HD', hd720: '720p HD', large: '480p', medium: '360p', small: '240p', tiny: '144p', auto: 'Auto' };
   function opts(box, list, cur, pick) {
     box.textContent = '';
     list.forEach(function (o) { var b = d.createElement('button'); b.type = 'button'; b.textContent = o[1]; if (o[0] === cur) { b.className = 'on'; } b.addEventListener('click', function (e) { e.stopPropagation(); pick(o[0]); render(); }); box.appendChild(b); });
   }
   function render() {
-    var ql = eng.qualities(), cq = eng.quality();
-    opts(q('quals'), ql.length ? ql.map(function (k) { return [k, QL[k] || k]; }) : [['orig', 'Original']], ql.length ? cq : 'orig', function (k) { if (k !== 'orig') { eng.setQuality(k); } });
+    var cq = eng.quality(), nt = q('qnote'), msg = eng.note ? eng.note() : '';
+    opts(q('quals'), eng.qualities(), cq, function (k) { eng.setQuality(k); });
+    nt.hidden = !msg; nt.textContent = msg;
     opts(q('speeds'), speeds.map(function (x) { return [x, x === 1 ? 'Normal' : x + '×']; }), rate, function (x) { rate = x; eng.setRate(x); });
-    var bd = q('qbadge'), hd = /^hd/.test(eng.actual ? eng.actual() : cq); bd.hidden = !hd; bd.textContent = hd ? 'HD' : '';
-  }
+    badge(); }
+  function badge() { var a = eng.actual ? eng.actual() : '', hd = /^hd|^(720|1080|1440|2160)p/.test(a), bd = q('qbadge'); bd.hidden = !hd; bd.textContent = /2160|1440/.test(a) ? '4K' : 'HD'; }
+  function refresh() { if (!q('menu').hidden) { render(); } else { badge(); } }
   function menu(open) { var m = q('menu'), b = q('settings'); m.hidden = !open; b.setAttribute('aria-expanded', open ? 'true' : 'false'); root.classList.toggle('menu-open', open); if (open) { render(); } }
   function toggle() { if (!eng) { return; } if (eng.paused()) { eng.play(); } else { eng.pause(); } }
   function syncMute() { root.classList.toggle('muted', eng.muted() || eng.volume() === 0); vol.value = eng.muted() ? 0 : eng.volume(); }
@@ -95,21 +97,46 @@
   /* ---- HTML5 engine ---- */
   function html5() {
     var v = root.querySelector('video');
-    var src = d.createElement('source'); src.src = root.getAttribute('data-src'); src.type = root.getAttribute('data-mime') || 'video/mp4'; v.appendChild(src); v.load();
+    /* Quality versions (if the admin uploaded any): Auto picks the smallest version that fills the player sharply. */
+    var QS = JSON.parse(root.getAttribute('data-qualities') || '[]'), qCur = 'auto', cur = '', first = true;
+    try { var sv = localStorage.getItem('zx_quality'); if (sv && QS.some(function (x) { return x.l === sv; })) { qCur = sv; } } catch (e) {}
+    function autoPick() {
+      var need = (root.clientHeight || 360) * Math.min(2, window.devicePixelRatio || 1), c = navigator.connection;
+      if (c && (c.saveData || /2g/.test(c.effectiveType || ''))) { need = Math.min(need, 360); }
+      for (var i = QS.length - 1; i >= 0; i--) { if (QS[i].h >= need * 0.9) { return QS[i]; } }
+      return QS[0];
+    }
+    function pickUrl() { if (!QS.length) { return root.getAttribute('data-src'); } var f = qCur === 'auto' ? autoPick() : QS.filter(function (x) { return x.l === qCur; })[0]; return (f || QS[0]).u; }
+    function load(u) {
+      if (u === cur) { return; }
+      var t = v.currentTime, playing = !v.paused, r = v.playbackRate;
+      cur = u; v.src = u; v.load();
+      if (!first) { setLoading(true); v.addEventListener('loadedmetadata', function () { v.currentTime = t; v.playbackRate = r; if (playing) { eng.play(); } }, { once: true }); }
+    }
     v.controls = false; v.disablePictureInPicture = true;
     eng = {
       play: function () { var p = v.play(); if (p && p.catch) { p.catch(function () {}); } }, pause: function () { v.pause(); }, paused: function () { return v.paused; },
       time: function () { return v.currentTime; }, duration: function () { return v.duration || 0; }, seek: function (t) { v.currentTime = t; },
       muted: function () { return v.muted; }, setMuted: function (m) { v.muted = m; }, volume: function () { return Math.round(v.volume * 100); }, setVolume: function (x) { v.volume = x / 100; },
-      setRate: function (r) { v.playbackRate = r; }, captions: function () {}, qualities: function () { return []; }, quality: function () { return 'orig'; }, setQuality: function () {},
+      setRate: function (r) { v.playbackRate = r; }, captions: function () {},
+      qualities: function () {
+        if (!QS.length) { return [['orig', 'Original']]; }
+        var now = QS.filter(function (x) { return x.u === cur; })[0];
+        return [['auto', 'Auto' + (qCur === 'auto' && now ? ' · ' + now.l : '')]].concat(QS.map(function (x) { return [x.l, x.l]; }));
+      },
+      quality: function () { return QS.length ? qCur : 'orig'; }, actual: function () { var n = QS.filter(function (x) { return x.u === cur; })[0]; return n ? n.l : ''; },
+      note: function () { return QS.length ? '' : 'This video has one version. Admins can add 720p or 480p versions in the video library.'; },
+      setQuality: function (k) { if (!QS.length) { return; } qCur = k; try { localStorage.setItem('zx_quality', k); } catch (e) {} load(pickUrl()); },
       buffered: function () { return v.buffered.length && v.duration ? v.buffered.end(v.buffered.length - 1) / v.duration : null; }
     };
-    v.addEventListener('loadedmetadata', function () { if (resume > 5 && resume < v.duration - 10) { v.currentTime = resume; } onTime(); setLoading(false); });
+    v.addEventListener('loadedmetadata', function () { if (first) { first = false; if (resume > 5 && resume < v.duration - 10) { v.currentTime = resume; } } onTime(); setLoading(false); badge(); });
     v.addEventListener('play', onPlay); v.addEventListener('pause', onPause); v.addEventListener('ended', onEnded);
     v.addEventListener('timeupdate', onTime); v.addEventListener('progress', onTime);
     v.addEventListener('waiting', function () { setLoading(true); }); v.addEventListener('playing', function () { setLoading(false); });
     v.addEventListener('volumechange', syncMute);
     v.addEventListener('error', function () { error('Your secure playback link may have expired. Reload the page to continue.'); }, true);
+    load(pickUrl());
+    if (QS.length) { var rz; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { if (qCur === 'auto') { load(pickUrl()); } }, 600); }); }
     wire();
   }
   /* ---- YouTube engine ---- */
@@ -143,11 +170,12 @@
           },
           onStateChange: function (e) {
             var S = YT.PlayerState;
-            if (e.data === S.PLAYING) { onPlay(); clearInterval(timer); timer = setInterval(onTime, 500); if (ccOn) { eng.captions(true); } }
+            if (e.data === S.PLAYING) { onPlay(); clearInterval(timer); timer = setInterval(onTime, 500); if (ccOn) { eng.captions(true); } refresh(); }
             else if (e.data === S.PAUSED) { clearInterval(timer); onPause(); }
             else if (e.data === S.ENDED) { clearInterval(timer); onEnded(); }
             else if (e.data === S.BUFFERING) { setLoading(true); }
           },
+          onPlaybackQualityChange: function () { refresh(); },
           onError: function () { error('This video is unavailable.'); }
         }
       });
@@ -157,9 +185,18 @@
         time: function () { return p.getCurrentTime ? p.getCurrentTime() : 0; }, duration: function () { return p.getDuration ? p.getDuration() : 0; },
         seek: function (t) { p.seekTo(t, true); }, muted: function () { return p.isMuted ? p.isMuted() : false; }, setMuted: function (m) { if (m) { p.mute(); } else { p.unMute(); } },
         volume: function () { return p.getVolume ? p.getVolume() : 100; }, setVolume: function (x) { p.setVolume(x); }, setRate: function (r) { p.setPlaybackRate(r); },
-        qualities: function () { var l = ((p.getAvailableQualityLevels && p.getAvailableQualityLevels()) || []).slice(); if (l.indexOf('auto') < 0) { l.push('auto'); } return l; },
+        levels: function () { return ((p.getAvailableQualityLevels && p.getAvailableQualityLevels()) || []).filter(function (k) { return k !== 'auto' && QL[k]; }); },
+        qualities: function () { var a = eng.actual(); return [['auto', 'Auto' + (!wantQ && QL[a] && a !== 'auto' ? ' · ' + QL[a].replace(' HD', '').replace(' 4K', '') : '')]].concat(eng.levels().map(function (k) { return [k, QL[k]]; })); },
         quality: function () { return wantQ || 'auto'; }, actual: function () { return p.getPlaybackQuality ? p.getPlaybackQuality() : ''; },
-        setQuality: function (k) { wantQ = k === 'auto' ? '' : k; try { if (p.setPlaybackQualityRange) { p.setPlaybackQualityRange(k, k); } p.setPlaybackQuality(k); } catch (e) {} },
+        note: function () { return !started ? 'Press play to load the qualities YouTube offers for this video.' : (!eng.levels().length ? 'YouTube is choosing the quality automatically for this video.' : ''); },
+        /* YouTube treats a chosen quality as a request; the label shows what it actually plays. */
+        setQuality: function (k) {
+          wantQ = k === 'auto' ? '' : k;
+          try { if (p.setPlaybackQualityRange) { p.setPlaybackQualityRange(k, k); } if (p.setPlaybackQuality) { p.setPlaybackQuality(k); } } catch (e) {}
+          var t = eng.time(), playing = !eng.paused();
+          try { (playing ? p.loadVideoById : p.cueVideoById).call(p, { videoId: id, startSeconds: t, suggestedQuality: k }); } catch (e) {}
+          setTimeout(refresh, 1500);
+        },
         captions: function (on) {
           ccOn = on;
           try { if (on) { p.loadModule('captions'); p.setOption('captions', 'track', { languageCode: (navigator.language || 'en').slice(0, 2) }); p.setOption('captions', 'reload', true); } else { p.unloadModule('captions'); p.setOption('captions', 'track', {}); } } catch (e) {}

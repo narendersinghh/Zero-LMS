@@ -45,10 +45,11 @@ class LessonController extends Controller {
         $video = $lesson['video_id'] ? DB::one('SELECT * FROM {videos} WHERE id = ?', [(int)$lesson['video_id']]) : null;
         $yt = $video && $video['provider'] === 'youtube';
         $playback = $video && !$yt ? Media::playbackUrl($video, (int)$lesson['id'], (int)$user['id']) : '';
+        $qualities = $video && $video['provider'] === 'local' ? Media::qualities($video, (int)$lesson['id'], (int)$user['id']) : [];
         $settings = json_decode((string)$lesson['settings'], true) ?: [];
         $content = Hooks::filter('lesson.content', Html::clean($lesson['content']), $lesson, $user);
         return view('student/lesson', [
-            'course' => $course, 'lesson' => $lesson, 'c' => $c, 'prev' => $prev, 'next' => $next, 'video' => $video, 'playback' => $playback,
+            'course' => $course, 'lesson' => $lesson, 'c' => $c, 'prev' => $prev, 'next' => $next, 'video' => $video, 'playback' => $playback, 'qualities' => $qualities,
             'embed' => $video && !$yt && Media::isEmbed($video), 'yt' => $yt, 'content' => $content, 'settings' => $settings, 'lp' => $progress[$lesson['id']] ?? null,
             'preview' => $check['preview'], 'user' => $user, 'quote' => Courses::quote($course),]);}
 

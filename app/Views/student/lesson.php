@@ -14,7 +14,7 @@ $day = \App\Services\Access::releaseDay($lesson);
 <div class="lesson-layout">
 <div class="lesson-main">
 <?php if ($video && !$embed && ($yt || $playback)): ?>
-<?php partial('player', ['lesson' => $lesson, 'video' => $video, 'playback' => $playback, 'yt' => $yt, 'user' => $user, 'lp' => $lp, 'done' => $done]); ?>
+<?php partial('player', ['lesson' => $lesson, 'video' => $video, 'playback' => $playback, 'qualities' => $qualities ?? [], 'yt' => $yt, 'user' => $user, 'lp' => $lp, 'done' => $done]); ?>
 <?php elseif (($video && $embed && $playback) || $embedUrl): ?>
 <div class="player player-embed" data-embed>
 <iframe src="<?= e($embedUrl ?: $playback) ?>" title="<?= e($lesson['title']) ?>" loading="lazy" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"></iframe>

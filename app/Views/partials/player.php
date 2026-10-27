@@ -3,7 +3,7 @@
 $wm = setting('video_watermark', true) ? $user['email'] . ' · #' . $user['id'] : '';
 $progressUrl = url('/lessons/' . $lesson['id'] . '/progress');
 ?>
-<div class="player" data-player data-kind="<?= $yt ? 'yt' : 'html5' ?>"<?= $yt ? ' data-source="' . e(url('/lessons/' . $lesson['id'] . '/source')) . '"' : ' data-src="' . e($playback) . '" data-mime="' . e($video['mime'] ?: 'video/mp4') . '"' ?> data-progress="<?= e($progressUrl) ?>" data-resume="<?= (int)($lp['position'] ?? 0) ?>" data-done="<?= $done ? 1 : 0 ?>">
+<div class="player" data-player data-kind="<?= $yt ? 'yt' : 'html5' ?>"<?= $yt ? ' data-source="' . e(url('/lessons/' . $lesson['id'] . '/source')) . '"' : ' data-src="' . e($playback) . '" data-mime="' . e($video['mime'] ?: 'video/mp4') . '"' . (!empty($qualities) ? ' data-qualities="' . e(json_encode($qualities, JSON_UNESCAPED_SLASHES)) . '"' : '') ?> data-progress="<?= e($progressUrl) ?>" data-resume="<?= (int)($lp['position'] ?? 0) ?>" data-done="<?= $done ? 1 : 0 ?>">
 <?php if ($yt): ?><div class="yt-host"><div data-yt-mount></div></div><div class="yt-cover" data-yt-cover></div>
 <?php else: ?><video playsinline preload="metadata" controlslist="nodownload noremoteplayback noplaybackrate" disablepictureinpicture disableremoteplayback></video><?php endif; ?>
 <div class="player-shield"></div>
@@ -21,7 +21,7 @@ $progressUrl = url('/lessons/' . $lesson['id'] . '/progress');
 <span class="grow"></span>
 <?php if ($yt): ?><button type="button" class="pbtn pcc" data-p="cc" aria-label="Captions" aria-pressed="false">CC</button><?php endif; ?>
 <div class="pset"><button type="button" class="pbtn" data-p="settings" aria-label="Quality and speed" aria-haspopup="true" aria-expanded="false"><?= icon('settings') ?><i class="pbadge" data-p="qbadge" hidden></i></button>
-<div class="pmenu" data-p="menu" hidden><div class="pm-sec"><small>Quality</small><div class="pm-opts" data-p="quals"></div></div><div class="pm-sec"><small>Speed</small><div class="pm-opts" data-p="speeds"></div></div></div></div>
+<div class="pmenu" data-p="menu" hidden><div class="pm-sec"><small>Quality</small><div class="pm-opts" data-p="quals"></div><p class="pm-note" data-p="qnote" hidden></p></div><div class="pm-sec"><small>Speed</small><div class="pm-opts" data-p="speeds"></div></div></div></div>
 <button type="button" class="pbtn" data-p="fs" aria-label="Fullscreen"><?= icon('maximize') ?></button>
 </div>
 </div>

@@ -156,7 +156,7 @@
     zone.addEventListener('dragleave', function () { zone.classList.remove('over'); });
     zone.addEventListener('drop', function (e) { e.preventDefault(); zone.classList.remove('over'); add(e.dataTransfer.files); });
     input.addEventListener('change', function () { add(input.files); input.value = ''; });
-    function add(files) { Array.prototype.forEach.call(files, function (f) { var row = d.createElement('div'); row.className = 'uq'; row.innerHTML = '<div class="row between"><b>' + esc(f.name) + '</b><small class="muted">' + (f.size / 1048576).toFixed(1) + ' MB</small></div><div class="progress"><i></i></div><small class="muted st">Waiting…</small>'; queue.appendChild(row); list.push({ f: f, row: row }); }); next(); }
+    function add(files) { var need = $('[data-up-field][required]', up); if (need && !need.value) { Zx.toast('Choose the quality first.', 'error'); need.focus(); return; } Array.prototype.forEach.call(files, function (f) { var row = d.createElement('div'); row.className = 'uq'; row.innerHTML = '<div class="row between"><b>' + esc(f.name) + '</b><small class="muted">' + (f.size / 1048576).toFixed(1) + ' MB</small></div><div class="progress"><i></i></div><small class="muted st">Waiting…</small>'; queue.appendChild(row); list.push({ f: f, row: row }); }); next(); }
     function next() {
       if (busy || !list.length) { return; }
       busy = true;
@@ -164,7 +164,7 @@
       videoDuration(f).then(function (dur) {
         (function send() {
           var fd = new FormData();
-          fd.append('upload_id', id); fd.append('index', i); fd.append('total', total); fd.append('name', f.name); fd.append('duration', dur); fd.append('chunk', f.slice(i * size, (i + 1) * size), 'chunk');
+          fd.append('upload_id', id); fd.append('index', i); fd.append('total', total); fd.append('name', f.name); fd.append('duration', dur); fd.append('chunk', f.slice(i * size, (i + 1) * size), 'chunk'); $$('[data-up-field]', up).forEach(function (x) { fd.append(x.name, x.value); });
           Zx.post(url, fd).then(function (j) {
             i++; tries = 0; bar.style.width = (i / total * 100) + '%'; stEl.textContent = 'Uploading… ' + Math.round(i / total * 100) + '%';
             if (i < total) { send(); return; }

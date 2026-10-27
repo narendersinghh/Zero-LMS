@@ -30,7 +30,7 @@ $cwUrl = fn($x) => url('/courses/' . $x['course']['slug'] . '/lessons/' . $x['le
 <div class="tile tint-yellow"><span class="tile-ico"><?= icon('book') ?></span><small>My courses</small><b><?= (int)$stats['courses'] ?><span> · <?= (int)$stats['finished'] ?> done</span></b></div>
 <div class="tile tint-green"><span class="tile-ico"><?= icon('check-circle') ?></span><small>Lessons completed</small><b><?= (int)$stats['completed_lessons'] ?><span>/<?= (int)$stats['total_lessons'] ?></span></b></div>
 <div class="tile tint-orange"><span class="tile-ico"><?= icon('flame') ?></span><small>Learning streak</small><b><?= (int)$stats['streak'] ?><span> day<?= $stats['streak'] === 1 ? '' : 's' ?></span></b></div>
-<div class="tile tint-purple tile-ring"><?php partial('ring', ['pct' => $overallPct, 'size' => 64]); ?><div><small>Overall progress</small><b style="font-size:1rem;display:block"><?= $overallPct >= 100 ? 'All done!' : 'Keep going' ?></b></div></div>
+<div class="tile tint-purple tile-ring"><?php partial('ring', ['pct' => $overallPct, 'size' => 42]); ?><small>Overall progress</small><b><?= $overallPct ?>%<span> · <?= $overallPct >= 100 ? 'all done!' : 'keep going' ?></span></b></div>
 </section>
 
 <?php foreach ($expiring as $x): ?>

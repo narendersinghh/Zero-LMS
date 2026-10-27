@@ -87,6 +87,9 @@ $r->group('/admin', ['auth', 'staff', 'can:admin.access'], function ($r) {
         $r->post('/external', 'Admin\VideoController@external');
         $r->post('/scan', 'Admin\VideoController@scan');
         $r->get('/{id}/stream', 'Admin\VideoController@stream');
+        $r->get('/{id}/qualities', 'Admin\VideoController@qualities');
+        $r->post('/{id}/qualities', 'Admin\VideoController@saveQualityLabel');
+        $r->post('/renditions/{id}/delete', 'Admin\VideoController@deleteRendition');
         $r->post('/{id}', 'Admin\VideoController@update');
         $r->post('/{id}/delete', 'Admin\VideoController@destroy');});
 

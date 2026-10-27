@@ -85,6 +85,18 @@ class VideoController extends Controller {
         if (!isset(Uploads::VIDEO_TYPES[$mime]) && $mime !== 'application/octet-stream') {
             @unlink($dest);
             json_out(['error' => 'File content is not a supported video (' . $mime . ').'], 422);}
+        if (($parent = $this->req->int('rendition_of')) > 0) {
+            $label = $this->req->str('label');
+            if (!isset(Media::HEIGHTS[$label]) || !DB::val("SELECT id FROM {videos} WHERE id = ? AND provider = 'local'", [$parent])) {
+                @unlink($dest);
+                json_out(['error' => 'Pick a quality for this version.'], 422);}
+            $old = DB::one('SELECT id, source FROM {video_renditions} WHERE video_id = ? AND label = ?', [$parent, $label]);
+            if ($old) {
+                @unlink(Media::DIR . '/' . $old['source']);
+                DB::delete('video_renditions', 'id = ?', [$old['id']]);}
+            $rid = DB::insert('video_renditions', ['video_id' => $parent, 'label' => $label, 'height' => Media::HEIGHTS[$label], 'source' => $final, 'mime' => $mime === 'application/octet-stream' ? 'video/mp4' : $mime, 'size' => filesize($dest), 'created_at' => now()]);
+            Audit::log('video.rendition', 'video', $parent, ['label' => $label]);
+            json_out(['ok' => true, 'done' => true, 'rendition' => $rid]);}
         $title = trim($this->req->str('title')) ?: ucfirst(trim(preg_replace('/[_-]+/', ' ', pathinfo($name, PATHINFO_FILENAME))));
         $id = DB::insert('videos', ['title' => mb_substr($title, 0, 200), 'provider' => 'local', 'source' => $final, 'mime' => $mime === 'application/octet-stream' ? 'video/mp4' : $mime, 'size' => filesize($dest), 'duration' => max(0, $this->req->int('duration')), 'created_by' => Auth::id(), 'created_at' => now(), 'updated_at' => now()]);
         Audit::log('video.uploaded', 'video', $id, ['title' => $title, 'size' => filesize($dest)]);
@@ -154,6 +166,24 @@ class VideoController extends Controller {
             json_out(['ok' => true]);}
         $this->ok('Video updated.');}
 
+    /** Quality versions of an uploaded video (each is a separate file the player can switch to). */
+    public function qualities(string $id) {
+        $v = DB::one("SELECT * FROM {videos} WHERE id = ? AND provider = 'local'", [(int)$id]) ?? abort(404);
+        $rows = DB::all('SELECT * FROM {video_renditions} WHERE video_id = ? ORDER BY height DESC', [$v['id']]);
+        return view('admin/videos/qualities', ['v' => $v, 'rows' => $rows, 'maxChunk' => min(8 * 1048576, (int)(Uploads::maxUploadBytes() * 0.9))]);}
+
+    public function saveQualityLabel(string $id) {
+        $v = DB::one("SELECT id FROM {videos} WHERE id = ? AND provider = 'local'", [(int)$id]) ?? abort(404);
+        $label = $this->req->str('quality_label');
+        DB::update('videos', ['quality_label' => isset(Media::HEIGHTS[$label]) ? $label : null, 'updated_at' => now()], 'id = ?', [$v['id']]);
+        $this->ok('Saved.');}
+
+    public function deleteRendition(string $id) {
+        $r = DB::one('SELECT * FROM {video_renditions} WHERE id = ?', [(int)$id]) ?? abort(404);
+        @unlink(Media::DIR . '/' . basename($r['source']));
+        DB::delete('video_renditions', 'id = ?', [$r['id']]);
+        $this->ok($r['label'] . ' version removed.');}
+
     public function stream(string $id) {
         $v = DB::one("SELECT * FROM {videos} WHERE id = ? AND provider = 'local'", [(int)$id]) ?? abort(404);
         $file = Media::path($v) ?? abort(404);
@@ -164,6 +194,9 @@ class VideoController extends Controller {
         $v = DB::one('SELECT * FROM {videos} WHERE id = ?', [(int)$id]) ?? abort(404);
         if ($v['provider'] === 'local' && ($file = Media::path($v))) {
             @unlink($file);}
+        foreach (DB::col('SELECT source FROM {video_renditions} WHERE video_id = ?', [$v['id']]) as $src) {
+            @unlink(Media::DIR . '/' . basename($src));}
+        DB::delete('video_renditions', 'video_id = ?', [$v['id']]);
         DB::delete('videos', 'id = ?', [$v['id']]);
         Audit::log('video.deleted', 'video', (int)$v['id'], ['title' => $v['title']]);
         $this->ok('Video deleted.');}}

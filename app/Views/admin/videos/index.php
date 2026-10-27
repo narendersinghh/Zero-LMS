@@ -37,7 +37,7 @@ include \App\Core\View::find('admin/courses/_tabs');
 <td class="muted small nowrap"><?= e(dt($v['created_at'])) ?></td>
 <td class="right nowrap">
 <button type="button" class="btn-icon" title="Edit" data-modal-open="edit-modal" data-fill="<?= e(json_encode(['_action' => url('/admin/videos/' . $v['id']), 'title' => $v['title'], 'duration' => $dur ? ($dur >= 3600 ? gmdate('G:i:s', $dur) : gmdate('i:s', $dur)) : '', 'provider' => $ext ? $v['provider'] : '', 'source' => $ext ? $link : '', '_ext' => $ext])) ?>"><?= icon('edit') ?></button>
-<?php if ($v['provider'] === 'local'): ?><button type="button" class="btn-icon" data-preview-video="<?= e(url('/admin/videos/' . $v['id'] . '/stream')) ?>" title="Preview"><?= icon('play') ?></button><?php endif; ?>
+<?php if ($v['provider'] === 'local'): ?><a class="btn-icon" href="<?= e(url('/admin/videos/' . $v['id'] . '/qualities')) ?>" title="Quality versions"><?= icon('layers') ?></a><button type="button" class="btn-icon" data-preview-video="<?= e(url('/admin/videos/' . $v['id'] . '/stream')) ?>" title="Preview"><?= icon('play') ?></button><?php endif; ?>
 <form method="post" action="<?= e(url('/admin/videos/' . $v['id'] . '/delete')) ?>" class="inline"><?= csrf_field() ?><button class="btn-icon danger" title="Delete" data-confirm="<?= $v['used'] ? 'This video is used in ' . (int)$v['used'] . ' lesson(s). ' : '' ?>Delete this video<?= $v['provider'] === 'local' ? ' file' : '' ?> permanently?"><?= icon('trash') ?></button></form>
 </td>
 </tr>
