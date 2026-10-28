@@ -3,6 +3,7 @@ $layout = 'admin';
 $title = 'Email templates';
 $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/admin/mail-log')) . '">' . icon('list') . 'Email log</a>';
 ?>
+<?php $tab = 'emails'; include \App\Core\View::find('admin/settings/_tabs'); ?>
 <div class="kpis kpis-3">
 <a class="kpi" href="<?= e(url('/admin/mail-log', ['status' => 'pending'])) ?>"><small>Queued</small><b><?= (int)($stats['pending'] ?? 0) ?></b></a>
 <a class="kpi" href="<?= e(url('/admin/mail-log', ['status' => 'sent'])) ?>"><small>Sent</small><b class="success"><?= (int)($stats['sent'] ?? 0) ?></b></a>
@@ -17,3 +18,4 @@ $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/admin/mail-log')) 
 <?php endforeach; ?>
 </tbody></table></div></div>
 <p class="small muted mt-3">Delivery method, sender and SMTP are configured in <a href="<?= e(url('/admin/settings/mail')) ?>">Settings → Email delivery</a>. Branding (logo, accent color) is applied automatically.</p>
+<?php include \App\Core\View::find('admin/settings/_end'); ?>

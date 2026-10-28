@@ -12,9 +12,11 @@ use App\Services\Access;
 class Media {
     public const DIR = STORAGE_PATH . '/videos';
 
-    public static function token(int $videoId, int $lessonId, int $userId): string {
+    public const HEIGHTS = ['2160p' => 2160, '1440p' => 1440, '1080p' => 1080, '720p' => 720, '480p' => 480, '360p' => 360, '240p' => 240];
+
+    public static function token(int $videoId, int $lessonId, int $userId, int $rendition = 0): string {
         $ttl = max(10, (int)Settings::get('video_token_ttl', 240)) * 60;
-        $p = Crypto::b64u(json_encode(['v' => $videoId, 'l' => $lessonId, 'u' => $userId, 'e' => time() + $ttl, 's' => substr(hash('sha256', Session::id()), 0, 20)]));
+        $p = Crypto::b64u(json_encode(['v' => $videoId, 'r' => $rendition, 'l' => $lessonId, 'u' => $userId, 'e' => time() + $ttl, 's' => substr(hash('sha256', Session::id()), 0, 20)]));
         return $p . '.' . Crypto::sign($p, 'media');}
 
     public static function verify(string $token): ?array {
@@ -54,6 +56,20 @@ class Media {
                 return 'https://player.vimeo.com/video/' . rawurlencode($id) . '?title=0&byline=0&portrait=0&dnt=1' . ($h ? '&h=' . rawurlencode($h) : '');}
         return '';}
 
+    /** Player quality list for an uploaded video: the original plus any extra versions, highest first. */
+    public static function qualities(array $video, int $lessonId, int $userId): array {
+        if ($video['provider'] !== 'local') {
+            return [];}
+        $rows = DB::all('SELECT id, label, height FROM {video_renditions} WHERE video_id = ? ORDER BY height DESC', [(int)$video['id']]);
+        if (!$rows) {
+            return [];}
+        $label = (string)($video['quality_label'] ?: 'Original');
+        $list = [['l' => $label, 'h' => self::HEIGHTS[$label] ?? 9999, 'u' => self::playbackUrl($video, $lessonId, $userId)]];
+        foreach ($rows as $r) {
+            $list[] = ['l' => $r['label'], 'h' => (int)$r['height'], 'u' => url('/media/stream/' . self::token((int)$video['id'], $lessonId, $userId, (int)$r['id']))];}
+        usort($list, fn($a, $b) => $b['h'] <=> $a['h']);
+        return $list;}
+
     public static function isEmbed(array $video): bool {
         return in_array($video['provider'], ['youtube', 'vimeo', 'bunny'], true);}
 
@@ -89,6 +105,9 @@ class Media {
                 throw new HttpException(403);}
             $_SESSION[$okKey][$d['l']] = time();}
         $video = DB::one('SELECT * FROM {videos} WHERE id = ? AND provider = ?', [(int)$d['v'], 'local']);
+        if ($video && !empty($d['r'])) {
+            $r = DB::one('SELECT source, mime FROM {video_renditions} WHERE id = ? AND video_id = ?', [(int)$d['r'], (int)$video['id']]);
+            $video = $r ? array_merge($video, $r) : null;}
         $file = $video ? self::path($video) : null;
         if (!$file) {
             throw new HttpException(404, 'Video file not found.');}

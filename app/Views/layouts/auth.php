@@ -12,9 +12,9 @@ $q = Courses::quote();
 <?php partial('logo'); ?>
 <div class="auth-hero">
 <span class="eyebrow"><?= icon('sparkles') ?> <?= e(setting('site_tagline')) ?></span>
-<?php if ($q): ?><blockquote><p>“<?= e($q['text']) ?>”</p><?php if ($q['author']): ?><cite>— <?= e($q['author']) ?></cite><?php endif; ?></blockquote><?php endif; ?>
+<?php if ($q): ?><blockquote><p>“<?= e($q['text']) ?>”</p><?php if ($q['author']): ?><cite><?= e($q['author']) ?></cite><?php endif; ?></blockquote><?php endif; ?>
 </div>
-<div class="auth-grid"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+<?= illus('auth', 'auth-illus') ?>
 </div>
 </section>
 <section class="auth-form">

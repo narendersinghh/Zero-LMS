@@ -1,7 +1,9 @@
 <?php
 $layout = 'admin';
-$title = 'CSV import & bulk enrollment';
+$title = 'Students';
 $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/admin/import/sample')) . '">' . icon('download') . 'Sample CSV</a>';
+$section = 'import';
+include \App\Core\View::find('admin/students/_tabs');
 ?>
 <form method="post" action="<?= e(url('/admin/import')) ?>" enctype="multipart/form-data" class="form-layout" data-loading>
 <?= csrf_field() ?>
@@ -12,7 +14,7 @@ $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/admin/import/sampl
 </div>
 <div class="card stack">
 <div class="card-head"><h3>2. Choose courses</h3></div>
-<?php if (!$courses): ?><p class="muted small">No courses yet — users will be created without enrollments.</p><?php endif; ?>
+<?php if (!$courses): ?><p class="muted small">No courses yet. Users will be created without enrollments.</p><?php endif; ?>
 <div class="check-list">
 <?php foreach ($courses as $c): ?><label class="check"><input type="checkbox" name="courses[]" value="<?= (int)$c['id'] ?>"><span><?= e($c['title']) ?><small class="muted"><?= $c['access_days'] ? ' · ' . (int)$c['access_days'] . '-day access' : ' · no time limit' ?><?= $c['start_date'] ? ' · starts ' . e($c['start_date']) : '' ?></small></span></label><?php endforeach; ?>
 </div>

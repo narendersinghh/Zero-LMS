@@ -43,12 +43,14 @@ class LessonController extends Controller {
         if (!$check['preview'] || $enr) {
             Progress::touch((int)$user['id'], $lesson);}
         $video = $lesson['video_id'] ? DB::one('SELECT * FROM {videos} WHERE id = ?', [(int)$lesson['video_id']]) : null;
-        $playback = $video ? Media::playbackUrl($video, (int)$lesson['id'], (int)$user['id']) : '';
+        $yt = $video && $video['provider'] === 'youtube';
+        $playback = $video && !$yt ? Media::playbackUrl($video, (int)$lesson['id'], (int)$user['id']) : '';
+        $qualities = $video && $video['provider'] === 'local' ? Media::qualities($video, (int)$lesson['id'], (int)$user['id']) : [];
         $settings = json_decode((string)$lesson['settings'], true) ?: [];
         $content = Hooks::filter('lesson.content', Html::clean($lesson['content']), $lesson, $user);
         return view('student/lesson', [
-            'course' => $course, 'lesson' => $lesson, 'c' => $c, 'prev' => $prev, 'next' => $next, 'video' => $video, 'playback' => $playback,
-            'embed' => $video && Media::isEmbed($video), 'content' => $content, 'settings' => $settings, 'lp' => $progress[$lesson['id']] ?? null,
+            'course' => $course, 'lesson' => $lesson, 'c' => $c, 'prev' => $prev, 'next' => $next, 'video' => $video, 'playback' => $playback, 'qualities' => $qualities,
+            'embed' => $video && !$yt && Media::isEmbed($video), 'yt' => $yt, 'content' => $content, 'settings' => $settings, 'lp' => $progress[$lesson['id']] ?? null,
             'preview' => $check['preview'], 'user' => $user, 'quote' => Courses::quote($course),]);}
 
     private function lessonFor(string $id): array {
@@ -59,6 +61,17 @@ class LessonController extends Controller {
         if (!$chk['ok']) {
             json_out(['error' => 'Forbidden'], 403);}
         return $lesson;}
+
+    /** Player source for embedded providers. Only returned to authorised XHR calls, never printed in page HTML. */
+    public function source(string $id) {
+        if (!$this->req->isAjax()) {
+            abort(403);}
+        $lesson = $this->lessonFor($id);
+        $v = $lesson['video_id'] ? DB::one('SELECT provider, source FROM {videos} WHERE id = ?', [(int)$lesson['video_id']]) : null;
+        if (!$v || $v['provider'] !== 'youtube') {
+            json_out(['error' => 'Not available'], 404);}
+        header('Cache-Control: no-store');
+        json_out(['k' => strrev(base64_encode(Media::youtubeId($v['source'])))]);}
 
     public function progress(string $id) {
         $lesson = $this->lessonFor($id);
@@ -73,6 +86,8 @@ class LessonController extends Controller {
             Progress::uncomplete(Auth::id(), (int)$lesson['id']);
             $done = false;}
         else {
+            if (!Hooks::filter('lesson.can_complete', true, $lesson, Auth::user())) {
+                json_out(['error' => 'Pass the lesson quiz to complete this lesson.'], 422);}
             Progress::complete(Auth::id(), $lesson);
             $done = true;}
         if ($this->req->isAjax()) {

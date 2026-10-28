@@ -1,86 +1,96 @@
 <?php
 $layout = 'app';
 $title = 'Dashboard';
-$hour = (int)(new DateTime('now', site_tz()))->format('G');
-$greet = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+$now = new DateTime('now', site_tz());
+$hour = (int)$now->format('G');
+$greet = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
 $first = explode(' ', trim($user['name']))[0];
+$overallPct = $stats['total_lessons'] ? (int)floor($stats['completed_lessons'] / $stats['total_lessons'] * 100) : 0;
+$cwUrl = fn($x) => url('/courses/' . $x['course']['slug'] . '/lessons/' . $x['lesson_id']);
 ?>
-<section class="hero">
-<div class="hero-main">
-<span class="eyebrow"><?= icon('sparkles') ?> <?= e((new DateTime('now', site_tz()))->format('l, F j')) ?></span>
-<h1><?= e($greet) ?>, <?= e($first) ?>.</h1>
-<p class="muted lead"><?= $stats['courses'] ? 'Keep the momentum going — every lesson moves you forward.' : 'Your learning space is ready. Courses you are given access to will appear here.' ?></p>
+<div class="dash">
+<div class="dash-main">
+<section class="banner">
+<div>
+<span class="eyebrow"><?= icon('sparkles') ?> <?= e($now->format('l, F j')) ?></span>
+<h1><?= e($greet) ?>, <?= e($first) ?> 👋</h1>
+<p class="lead"><?= $stats['courses'] ? ($continue ? 'Pick up right where you left off. A few minutes today keeps your streak alive.' : 'You\'re all caught up. New lessons unlock on schedule.') : 'Your learning space is ready. Explore courses to get started.' ?></p>
 <?php if ($continue): ?>
 <a class="continue" href="<?= e(url('/courses/' . $continue['course']['slug'] . '/lessons/' . $continue['lesson_id'])) ?>">
 <span class="continue-play"><?= icon('play') ?></span>
-<span class="continue-text"><small>Continue learning · <?= e($continue['course']['title']) ?></small><b><?= e($continue['title']) ?></b><?php if ($continue['percent']): ?><span class="progress progress-thin"><i style="width:<?= (int)$continue['percent'] ?>%"></i></span><?php endif; ?></span>
+<span class="continue-text"><small>Continue · <?= e($continue['course']['title']) ?></small><b><?= e($continue['title']) ?></b><?php if ($continue['percent']): ?><span class="progress progress-thin"><i style="width:<?= (int)$continue['percent'] ?>%"></i></span><?php endif; ?></span>
 <?= icon('arrow-right', 'continue-arrow') ?>
 </a>
-<?php endif; ?>
+<?php elseif (!$stats['courses']): ?><a class="btn btn-primary btn-lg" href="<?= e(url(setting('store_enabled') ? '/store' : '/courses')) ?>"><?= icon('search') ?>Explore courses</a><?php endif; ?>
 </div>
-<?php if ($quote): ?>
-<figure class="quote-card">
-<?= icon('quote', 'quote-ico') ?>
-<blockquote><?= e($quote['text']) ?></blockquote>
-<?php if ($quote['author']): ?><figcaption>— <?= e($quote['author']) ?></figcaption><?php endif; ?>
-</figure>
-<?php endif; ?>
+<div class="banner-art"><?= illus('hero-learner') ?></div>
 </section>
 
-<section class="stats">
-<div class="stat"><span class="stat-ico"><?= icon('book') ?></span><div><b><?= (int)$stats['courses'] ?></b><small>Enrolled courses</small></div></div>
-<div class="stat"><span class="stat-ico"><?= icon('check-circle') ?></span><div><b><?= (int)$stats['completed_lessons'] ?></b><small>Lessons completed</small></div></div>
-<div class="stat"><span class="stat-ico stat-flame"><?= icon('flame') ?></span><div><b><?= (int)$stats['streak'] ?> <?= $stats['streak'] === 1 ? 'day' : 'days' ?></b><small>Learning streak</small></div></div>
-<div class="stat"><span class="stat-ico"><?= icon('trophy') ?></span><div><b><?= (int)$stats['finished'] ?></b><small>Courses finished</small></div></div>
+<section class="tiles">
+<div class="tile tint-yellow"><span class="tile-ico"><?= icon('book') ?></span><small>My courses</small><b><?= (int)$stats['courses'] ?><span> · <?= (int)$stats['finished'] ?> done</span></b></div>
+<div class="tile tint-green"><span class="tile-ico"><?= icon('check-circle') ?></span><small>Lessons completed</small><b><?= (int)$stats['completed_lessons'] ?><span>/<?= (int)$stats['total_lessons'] ?></span></b></div>
+<div class="tile tint-orange"><span class="tile-ico"><?= icon('flame') ?></span><small>Learning streak</small><b><?= (int)$stats['streak'] ?><span> day<?= $stats['streak'] === 1 ? '' : 's' ?></span></b></div>
+<div class="tile tint-purple tile-ring"><?php partial('ring', ['pct' => $overallPct, 'size' => 42]); ?><small>Overall progress</small><b><?= $overallPct ?>%<span> · <?= $overallPct >= 100 ? 'all done!' : 'keep going' ?></span></b></div>
 </section>
 
 <?php foreach ($expiring as $x): ?>
-<div class="alert alert-warning"><?= icon('clock') ?><span>Your access to <b><?= e($x['title']) ?></b> ends on <b><?= e(dt($x['expires_at'])) ?></b> (<?= e(time_until(strtotime($x['expires_at'] . ' UTC'))) ?> left).</span><a class="btn btn-sm btn-ghost" href="<?= e(url('/courses/' . $x['slug'])) ?>">Continue</a></div>
+<div class="alert alert-warning m-0"><?= icon('clock') ?><span>Access to <b><?= e($x['title']) ?></b> ends <b><?= e(dt($x['expires_at'])) ?></b> (<?= e(time_until(strtotime($x['expires_at'] . ' UTC'))) ?> left).</span><a class="btn btn-sm btn-ghost" href="<?= e(url('/courses/' . $x['slug'])) ?>">Continue</a></div>
 <?php endforeach; ?>
 
-<div class="dash-grid">
-<div class="dash-main">
-<div class="section-head"><h2>My courses</h2><?php if (count($enrollments) > 3): ?><a href="<?= e(url('/courses')) ?>" class="small">View all <?= icon('arrow-right') ?></a><?php endif; ?></div>
-<?php if (!$enrollments): ?>
-<?php partial('empty', ['icon' => 'book', 'heading' => 'No courses yet', 'text' => 'When you are enrolled in a course it will show up here. Check your email for access details.']); ?>
-<?php else: ?>
-<div class="course-grid">
-<?php foreach (array_slice($enrollments, 0, 6) as $c): $o = $overview[$c['id']] ?? ['percent' => 0, 'completed' => 0, 'total' => 0]; partial('course_card', ['c' => $c, 'p' => $o]); endforeach; ?>
-</div>
-<?php endif; ?>
-
-<?php if ($recent): ?>
-<div class="section-head mt-5"><h2>Recently viewed</h2></div>
-<div class="card list-card">
-<?php foreach ($recent as $r): ?>
-<a class="list-row" href="<?= e(url('/courses/' . $r['slug'] . '/lessons/' . $r['lesson_id'])) ?>">
-<span class="list-ico<?= $r['completed_at'] ? ' done' : '' ?>"><?= icon($r['completed_at'] ? 'check' : 'play') ?></span>
-<span class="grow"><b><?= e($r['title']) ?></b><small class="muted"><?= e($r['course_title']) ?> · <?= e(time_ago($r['last_viewed_at'])) ?></small></span>
-<?php if (!$r['completed_at'] && $r['percent']): ?><span class="pill"><?= (int)$r['percent'] ?>%</span><?php endif; ?>
-<?= icon('chevron-right', 'muted') ?>
+<?php if ($cw): ?>
+<section>
+<div class="section-head"><h2>Continue watching</h2><a href="<?= e(url('/courses')) ?>">View all</a></div>
+<div class="cw-grid">
+<?php foreach ($cw as $x): $cc = $x['course']; ?>
+<a class="cw" href="<?= e($cwUrl($x)) ?>">
+<div class="cv<?= $cc['cover_image'] ? '' : ' cv-illus tint-' . e(course_tint($cc)) ?>"<?= $cc['cover_image'] ? ' style="background-image:url(\'' . e(upload_url($cc['cover_image'])) . '\')"' : '' ?>><?php if (!$cc['cover_image']): ?><img src="<?= e(course_illus($cc)) ?>" alt="" loading="lazy"><?php endif; ?><span class="cw-play"><?= icon('play') ?></span><?php if ($x['percent']): ?><span class="cw-bar"><i style="width:<?= (int)$x['percent'] ?>%"></i></span><?php endif; ?></div>
+<div class="cw-body"><small><?= e($cc['title']) ?></small><b><?= e($x['title']) ?></b></div>
 </a>
 <?php endforeach; ?>
 </div>
+</section>
 <?php endif; ?>
-<?php foreach ($widgets as $w): ?><div class="mt-5"><?= $w ?></div><?php endforeach; ?>
+
+<section>
+<div class="section-head"><h2>My courses</h2><?php if (count($enrollments) > 4): ?><a href="<?= e(url('/courses')) ?>">View all</a><?php else: ?><a href="<?= e(url(setting('store_enabled') ? '/store' : '/courses')) ?>">Explore more</a><?php endif; ?></div>
+<?php if (!$enrollments): ?>
+<?php partial('empty', ['illus' => 'explore', 'heading' => 'No courses yet', 'text' => 'Browse the catalog or use the course link you received to enroll.', 'action' => '<a class="btn btn-primary" href="' . e(url(setting('store_enabled') ? '/store' : '/courses')) . '">' . icon('search') . 'Explore courses</a>']); ?>
+<?php else: ?>
+<div class="course-grid"><?php foreach (array_slice($enrollments, 0, 4) as $c): partial('course_card', ['c' => $c, 'p' => $overview[$c['id']] ?? []]); endforeach; ?></div>
+<?php endif; ?>
+</section>
+<div class="grid-2 dash-pair">
+<div class="card">
+<div class="card-head"><h3>Achievements</h3><span class="muted small"><?= count(array_filter($achievements, fn($a) => $a[4] >= $a[5])) ?>/<?= count($achievements) ?> unlocked</span></div>
+<?php foreach ($achievements as [$name, $desc, $ic, $tint, $have, $need]): $ok = $have >= $need; ?>
+<div class="ach" title="<?= e($desc) ?>"><span class="ach-badge<?= $ok ? '' : ' locked' ?>" style="background:var(--p-<?= e($tint) ?>)"><?= icon($ic) ?></span><div class="grow"><b><?= e($name) ?><span><?= (int)$have ?>/<?= (int)$need ?></span></b><small class="muted"><?= e($desc) ?></small><div class="progress"><i style="width:<?= round($have / $need * 100) ?>%"></i></div></div></div>
+<?php endforeach; ?>
+</div>
+<div class="card">
+<div class="card-head"><h3>Learning statistics</h3></div>
+<div class="stat-list">
+<div class="stat-li"><?= icon('clock') ?>Hours learned<b><?= e((string)$stats['hours']) ?></b></div>
+<div class="stat-li"><?= icon('calendar') ?>Active days<b><?= (int)$stats['active_days'] ?></b></div>
+<div class="stat-li"><?= icon('check-circle') ?>Lessons completed<b><?= (int)$stats['completed_lessons'] ?></b></div>
+<div class="stat-li"><?= icon('trophy') ?>Courses completed<b><?= (int)$stats['finished'] ?></b></div>
+</div>
+</div>
+</div>
+<?php foreach ($widgets as $w): ?><?= $w ?><?php endforeach; ?>
 </div>
 
 <aside class="dash-side">
 <div class="card">
-<div class="card-head"><h3><?= icon('calendar') ?> Upcoming lessons</h3></div>
-<?php if (!$upcoming): ?><p class="muted small">No scheduled lessons right now. You're all caught up!</p><?php endif; ?>
-<ul class="timeline">
+<div class="card-head"><h3>Upcoming</h3><span class="muted small"><?= e($now->format('F')) ?></span></div>
+<div class="days"><?php foreach ($days as $d): ?><div class="day<?= $d['today'] ? ' today' : '' ?><?= $d['count'] ? ' has' : '' ?>"><span><?= e($d['dow']) ?></span><b><?= e($d['day']) ?></b></div><?php endforeach; ?></div>
+<?php if (!$upcoming): ?><p class="muted small m-0">No new lessons scheduled. You're all caught up! 🎉</p><?php endif; ?>
+<div class="up-list">
 <?php foreach ($upcoming as $l): ?>
-<li><span class="tl-dot"></span><div><b><?= e($l['title']) ?></b><small class="muted"><?= e($l['course']['title']) ?></small><small class="unlock"><?= icon('lock') ?> <?= e(dtime($l['unlock_at'])) ?> · <span data-countdown="<?= (int)$l['unlock_at'] ?>"><?= e(time_until($l['unlock_at'])) ?></span></small></div></li>
-<?php endforeach; ?>
-</ul>
-</div>
-<div class="card mt-4">
-<div class="card-head"><h3><?= icon('bell') ?> Notifications</h3><a href="<?= e(url('/notifications')) ?>" class="small">All</a></div>
-<?php if (!$notifications): ?><p class="muted small">Nothing new.</p><?php endif; ?>
-<?php foreach ($notifications as $n): ?>
-<a class="mini-notif<?= $n['read_at'] ? '' : ' unread' ?>" href="<?= e(url('/notifications/' . $n['id'] . '/open')) ?>"><b><?= e($n['title']) ?></b><small class="muted"><?= e($n['body']) ?> · <?= e(time_ago($n['created_at'])) ?></small></a>
+<a class="up" href="<?= e(url('/courses/' . $l['course']['slug'])) ?>"><span class="up-ico" style="background:var(--p-<?= e(course_tint($l['course'])) ?>)"><?= icon('lock') ?></span><span class="grow"><b><?= e($l['title']) ?></b><small><?= e(dtime($l['unlock_at'])) ?> · <span data-countdown="<?= (int)$l['unlock_at'] ?>"><?= e(time_until($l['unlock_at'])) ?></span></small></span></a>
 <?php endforeach; ?>
 </div>
+</div>
+<?php if ($quote): ?><figure class="quote-card"><?= icon('quote', 'quote-ico') ?><blockquote><?= e($quote['text']) ?></blockquote><?php if ($quote['author']): ?><figcaption><?= e($quote['author']) ?></figcaption><?php endif; ?></figure><?php endif; ?>
+<?= hook_html('dashboard.side', $user) ?>
 </aside>
 </div>

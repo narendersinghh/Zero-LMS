@@ -3,6 +3,12 @@ use App\Services\Access;
 $layout = 'admin';
 $title = 'Enrollments';
 $state = (string)($_GET['state'] ?? '');
+$course = (int)($_GET['course'] ?? 0) ? (array_values(array_filter($courses, fn($c) => (int)$c['id'] === (int)$_GET['course']))[0] ?? null) : null;
+if ($course) {
+    $title = $course['title'];
+    $crumbs = ['Courses' => '/admin/courses'];
+    $sub = 'enrollments';
+    include \App\Core\View::find('admin/courses/_subnav');}
 ?>
 <form class="toolbar" method="get">
 <div class="search grow"><?= icon('search') ?><input type="search" name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="Search student…"></div>

@@ -12,8 +12,8 @@ class Auth {
     public static function permissions(): array {
         static $p = null;
         if ($p === null) {
-            $admin = ['admin.access', 'courses.manage', 'videos.manage', 'students.manage', 'enrollments.manage', 'imports.run', 'reports.view', 'emails.manage', 'branding.manage', 'logs.view', 'courses.preview'];
-            $super = array_merge($admin, ['courses.delete', 'admins.manage', 'settings.system', 'updates.run', 'modules.manage', 'mail.configure']);
+            $admin = ['admin.access', 'courses.manage', 'videos.manage', 'students.manage', 'enrollments.manage', 'imports.run', 'reports.view', 'emails.manage', 'branding.manage', 'logs.view', 'courses.preview', 'orders.manage'];
+            $super = array_merge($admin, ['courses.delete', 'admins.manage', 'settings.system', 'updates.run', 'modules.manage', 'mail.configure', 'payments.configure']);
             $p = Hooks::filter('auth.permissions', ['super_admin' => $super, 'admin' => $admin, 'student' => ['learn']]);}
         return $p;}
 

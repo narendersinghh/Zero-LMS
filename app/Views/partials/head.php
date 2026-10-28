@@ -13,6 +13,8 @@ $fonts = Theme::fontsHref();
 <meta name="theme-color" content="<?= e(((array)setting('palette_' . Theme::current()))['bg'] ?? '#0a0a0b') ?>">
 <link rel="icon" href="<?= $fav ? e(upload_url($fav)) : e(asset('img/favicon.svg')) ?>">
 <?php if ($fonts): ?><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="<?= e($fonts) ?>"><?php endif; ?>
+<?php foreach (Theme::preloadFonts() as $pf): ?><link rel="preload" href="<?= e(base_path() . '/assets/' . $pf) ?>" as="font" type="font/woff2" crossorigin><?php endforeach; ?>
 <link rel="stylesheet" href="<?= e(asset('dist/app.min.css')) ?>">
 <style><?= Theme::css() ?></style>
 <script src="<?= e(asset('dist/app.min.js')) ?>" defer></script>
+<?php foreach (\App\Core\Hooks::filter('head.assets', []) as $a): ?><?php if (!empty($a['css'])): ?><link rel="stylesheet" href="<?= e($a['css']) ?>"><?php elseif (!empty($a['js'])): ?><script src="<?= e($a['js']) ?>" defer></script><?php endif; ?><?php endforeach; ?>

@@ -10,6 +10,7 @@ if (!$isNew) {
     $actions = '<a class="btn btn-ghost btn-sm" href="' . e(url('/courses/' . $course['slug'] . '/lessons/' . $lesson['id'])) . '" target="_blank" rel="noopener">' . icon('eye') . 'Preview</a>';}
 $dur = (int)$v('duration');
 ?>
+<?php $sub = 'curriculum'; include \App\Core\View::find('admin/courses/_subnav'); ?>
 <form method="post" action="<?= e(url($isNew ? '/admin/courses/' . $course['id'] . '/lessons' : '/admin/lessons/' . $lesson['id'])) ?>" class="form-layout" data-loading>
 <?= csrf_field() ?>
 <div class="stack-lg">
@@ -27,14 +28,14 @@ $dur = (int)$v('duration');
 </div>
 <div class="field" data-show-when="type=embed"><label>Embed URL</label><input type="url" name="embed_url" value="<?= e(old('embed_url', $settings['embed_url'] ?? '')) ?>" placeholder="https://…"><small class="hint">Any embeddable https page (Loom, Google Slides, Typeform…).</small><?= field_error('embed_url') ?></div>
 <div class="field"><label>Short summary</label><input name="summary" value="<?= e($v('summary')) ?>" maxlength="500" placeholder="Shown under the title and in lists"></div>
-<div class="field"><label>Lesson content / notes</label><div class="editor" data-editor><textarea name="content" hidden><?= e($v('content')) ?></textarea></div></div>
+<div class="field"><label>Lesson content / notes</label><div class="editor" data-editor data-upload="<?= e(url('/admin/editor/upload')) ?>"><textarea name="content" hidden><?= e($v('content')) ?></textarea></div><small class="hint">Add images, PDFs and other files with the Image and File buttons, or drag them into the editor. Files open only for signed-in students.</small></div>
 </div>
 </div>
 <aside class="stack-lg">
 <div class="card stack">
 <div class="card-head"><h3>Publish</h3></div>
 <div class="field"><label>Status</label><select name="status"><option value="published"<?= selected('published', $v('status')) ?>>Published</option><option value="draft"<?= selected('draft', $v('status')) ?>>Draft (hidden)</option></select></div>
-<div class="field"><label>Module</label><select name="module_id"><option value="0">— No module —</option><?php foreach ($modules as $m): ?><option value="<?= (int)$m['id'] ?>"<?= selected($m['id'], $v('module_id')) ?>><?= e($m['title']) ?><?= $m['release_day'] ? ' (Day ' . (int)$m['release_day'] . ')' : '' ?></option><?php endforeach; ?></select></div>
+<div class="field"><label>Module</label><select name="module_id"><option value="0">No module</option><?php foreach ($modules as $m): ?><option value="<?= (int)$m['id'] ?>"<?= selected($m['id'], $v('module_id')) ?>><?= e($m['title']) ?><?= $m['release_day'] ? ' (Day ' . (int)$m['release_day'] . ')' : '' ?></option><?php endforeach; ?></select></div>
 <div class="row gap-2 wrap">
 <button class="btn btn-primary grow" name="after" value="<?= $isNew ? 'list' : 'list' ?>"><?= icon('check') ?>Save</button>
 <button class="btn btn-ghost" name="after" value="<?= $isNew ? 'new' : 'stay' ?>"><?= $isNew ? 'Save & add another' : 'Save & stay' ?></button>
@@ -58,4 +59,5 @@ $dur = (int)$v('duration');
 </div>
 </aside>
 </form>
+<?php if ($lesson['id']): ?><div class="mt-4"><?= hook_html('admin.lesson_panels', $lesson, $course) ?></div><?php endif; ?>
 <?php partial('video_modal'); ?>

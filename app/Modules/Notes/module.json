@@ -1,0 +1,15 @@
+{
+ "name": "Lesson notes",
+ "description": "Private, auto-saving notes for students on every lesson, plus a searchable 'My notes' page with text export.",
+ "version": "1.0.0",
+ "author": "Zeroes",
+ "icon": "edit",
+ "color": "green",
+ "category": "Learning",
+ "settings": "/notes",
+ "features": [
+  "Auto-saving per-lesson notes",
+  "Searchable “My notes” page",
+  "Export as text"
+ ]
+}

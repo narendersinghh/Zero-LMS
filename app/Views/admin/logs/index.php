@@ -1,4 +1,5 @@
 <?php $layout = 'admin'; $title = 'Audit log'; ?>
+<?php $tab = 'logs'; include \App\Core\View::find('admin/settings/_tabs'); ?>
 <form class="toolbar" method="get">
 <div class="search grow"><?= icon('search') ?><input type="search" name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="Search action, details, email or IP…"></div>
 <select name="action" data-autosubmit><option value="">All areas</option><?php foreach ($groups as $g): ?><option value="<?= e($g) ?>"<?= selected($g, $_GET['action'] ?? '') ?>><?= e(ucfirst(str_replace('_', ' ', $g))) ?></option><?php endforeach; ?></select>
@@ -17,3 +18,4 @@
 <?php endforeach; ?>
 </tbody></table></div></div>
 <?= $pg->links() ?>
+<?php include \App\Core\View::find('admin/settings/_end'); ?>

@@ -27,9 +27,14 @@ class VideoController extends Controller {
         $ws = implode(' AND ', $w);
         $pg = new Paginator((int)DB::val("SELECT COUNT(*) FROM {videos} v WHERE $ws", $p), 30);
         $videos = DB::all("SELECT v.*, (SELECT COUNT(*) FROM {lessons} l WHERE l.video_id = v.id) AS used FROM {videos} v WHERE $ws ORDER BY v.id DESC" . $pg->limitSql(), $p);
+        $ids = array_column($videos, 'id');
+        $usedIn = [];
+        if ($ids) {
+            foreach (DB::all('SELECT l.id, l.title, l.video_id, c.title AS course_title FROM {lessons} l JOIN {courses} c ON c.id = l.course_id WHERE l.video_id IN (' . DB::in($ids) . ') ORDER BY c.title, l.sort_order', $ids) as $l) {
+                $usedIn[$l['video_id']][] = $l;}}
         $incoming = array_map('basename', array_filter(glob(Media::DIR . '/incoming/*') ?: [], 'is_file'));
         $disk = (int)DB::val("SELECT COALESCE(SUM(size), 0) FROM {videos} WHERE provider = 'local'");
-        return view('admin/videos/index', ['videos' => $videos, 'pg' => $pg, 'q' => $q, 'provider' => $prov, 'incoming' => $incoming, 'disk' => $disk, 'maxChunk' => min(8 * 1048576, (int)(Uploads::maxUploadBytes() * 0.9))]);}
+        return view('admin/videos/index', ['usedIn' => $usedIn, 'videos' => $videos, 'pg' => $pg, 'q' => $q, 'provider' => $prov, 'incoming' => $incoming, 'disk' => $disk, 'maxChunk' => min(8 * 1048576, (int)(Uploads::maxUploadBytes() * 0.9))]);}
 
     public function search() {
         $q = $this->req->str('q');
@@ -80,6 +85,18 @@ class VideoController extends Controller {
         if (!isset(Uploads::VIDEO_TYPES[$mime]) && $mime !== 'application/octet-stream') {
             @unlink($dest);
             json_out(['error' => 'File content is not a supported video (' . $mime . ').'], 422);}
+        if (($parent = $this->req->int('rendition_of')) > 0) {
+            $label = $this->req->str('label');
+            if (!isset(Media::HEIGHTS[$label]) || !DB::val("SELECT id FROM {videos} WHERE id = ? AND provider = 'local'", [$parent])) {
+                @unlink($dest);
+                json_out(['error' => 'Pick a quality for this version.'], 422);}
+            $old = DB::one('SELECT id, source FROM {video_renditions} WHERE video_id = ? AND label = ?', [$parent, $label]);
+            if ($old) {
+                @unlink(Media::DIR . '/' . $old['source']);
+                DB::delete('video_renditions', 'id = ?', [$old['id']]);}
+            $rid = DB::insert('video_renditions', ['video_id' => $parent, 'label' => $label, 'height' => Media::HEIGHTS[$label], 'source' => $final, 'mime' => $mime === 'application/octet-stream' ? 'video/mp4' : $mime, 'size' => filesize($dest), 'created_at' => now()]);
+            Audit::log('video.rendition', 'video', $parent, ['label' => $label]);
+            json_out(['ok' => true, 'done' => true, 'rendition' => $rid]);}
         $title = trim($this->req->str('title')) ?: ucfirst(trim(preg_replace('/[_-]+/', ' ', pathinfo($name, PATHINFO_FILENAME))));
         $id = DB::insert('videos', ['title' => mb_substr($title, 0, 200), 'provider' => 'local', 'source' => $final, 'mime' => $mime === 'application/octet-stream' ? 'video/mp4' : $mime, 'size' => filesize($dest), 'duration' => max(0, $this->req->int('duration')), 'created_by' => Auth::id(), 'created_at' => now(), 'updated_at' => now()]);
         Audit::log('video.uploaded', 'video', $id, ['title' => $title, 'size' => filesize($dest)]);
@@ -87,14 +104,8 @@ class VideoController extends Controller {
 
     public function external() {
         $d = $this->validate(['title' => 'required|max:200', 'provider' => 'required|in:bunny,vimeo,youtube', 'source' => 'required|max:500', 'duration' => 'max:10']);
-        $src = $d['source'];
-        if ($d['provider'] === 'youtube') {
-            $src = Media::youtubeId($src);}
-        elseif ($d['provider'] === 'vimeo') {
-            $src = Media::vimeoId($src);}
-        elseif (preg_match('~/([0-9a-f-]{36})~i', $src, $m)) {
-            $src = $m[1];}
-        $dur = preg_match('/^(\d+):(\d{2})$/', (string)$d['duration'], $m) ? (int)$m[1] * 60 + (int)$m[2] : (int)$d['duration'] * 60;
+        $src = self::sourceId($d['provider'], $d['source']);
+        $dur = self::seconds((string)$d['duration'], 60);
         $id = DB::insert('videos', ['title' => $d['title'], 'provider' => $d['provider'], 'source' => $src, 'duration' => $dur, 'created_by' => Auth::id(), 'created_at' => now(), 'updated_at' => now()]);
         Audit::log('video.added', 'video', $id, ['provider' => $d['provider']]);
         if ($this->req->isAjax()) {
@@ -120,13 +131,58 @@ class VideoController extends Controller {
         Audit::log('video.scan', null, null, ['imported' => $n]);
         $this->ok($n ? "$n video(s) imported from the incoming folder." : 'No new video files found in storage/videos/incoming.');}
 
+    /** Extract the provider's video ID from a pasted URL or ID. */
+    private static function sourceId(string $provider, string $src): string {
+        if ($provider === 'youtube') {
+            return Media::youtubeId($src);}
+        if ($provider === 'vimeo') {
+            return Media::vimeoId($src);}
+        return preg_match('~/([0-9a-f-]{36})~i', $src, $m) ? $m[1] : trim($src);}
+
+    /** "h:mm:ss" or "mm:ss" to seconds; a bare number is multiplied by $unit. */
+    private static function seconds(string $v, int $unit = 1): int {
+        $v = trim($v);
+        if (strpos($v, ':') === false) {
+            return max(0, (int)$v * $unit);}
+        $t = 0;
+        foreach (explode(':', $v) as $part) {
+            $t = $t * 60 + (int)$part;}
+        return $t;}
+
     public function update(string $id) {
         $v = DB::one('SELECT * FROM {videos} WHERE id = ?', [(int)$id]) ?? abort(404);
-        $d = $this->validate(['title' => 'required|max:200', 'duration' => 'int']);
-        DB::update('videos', ['title' => $d['title'], 'duration' => max(0, (int)$d['duration']), 'updated_at' => now()], 'id = ?', [$v['id']]);
+        $d = $this->validate(['title' => 'required|max:200', 'duration' => 'max:10', 'provider' => 'in:bunny,vimeo,youtube', 'source' => 'max:500']);
+        $row = ['title' => $d['title'], 'duration' => self::seconds((string)($d['duration'] ?? 0)), 'updated_at' => now()];
+        if ($v['provider'] !== 'local' && trim((string)($d['source'] ?? '')) !== '') {
+            $prov = ($d['provider'] ?? '') ?: $v['provider'];
+            $src = self::sourceId($prov, (string)$d['source']);
+            if ($src === '') {
+                flash('error', 'That video link could not be read. Paste the full URL or the video ID.');
+                back();}
+            $row += ['provider' => $prov, 'source' => $src];}
+        DB::update('videos', $row, 'id = ?', [$v['id']]);
+        Audit::log('video.updated', 'video', (int)$v['id'], array_intersect_key($row, ['provider' => 1, 'source' => 1]));
         if ($this->req->isAjax()) {
             json_out(['ok' => true]);}
         $this->ok('Video updated.');}
+
+    /** Quality versions of an uploaded video (each is a separate file the player can switch to). */
+    public function qualities(string $id) {
+        $v = DB::one("SELECT * FROM {videos} WHERE id = ? AND provider = 'local'", [(int)$id]) ?? abort(404);
+        $rows = DB::all('SELECT * FROM {video_renditions} WHERE video_id = ? ORDER BY height DESC', [$v['id']]);
+        return view('admin/videos/qualities', ['v' => $v, 'rows' => $rows, 'maxChunk' => min(8 * 1048576, (int)(Uploads::maxUploadBytes() * 0.9))]);}
+
+    public function saveQualityLabel(string $id) {
+        $v = DB::one("SELECT id FROM {videos} WHERE id = ? AND provider = 'local'", [(int)$id]) ?? abort(404);
+        $label = $this->req->str('quality_label');
+        DB::update('videos', ['quality_label' => isset(Media::HEIGHTS[$label]) ? $label : null, 'updated_at' => now()], 'id = ?', [$v['id']]);
+        $this->ok('Saved.');}
+
+    public function deleteRendition(string $id) {
+        $r = DB::one('SELECT * FROM {video_renditions} WHERE id = ?', [(int)$id]) ?? abort(404);
+        @unlink(Media::DIR . '/' . basename($r['source']));
+        DB::delete('video_renditions', 'id = ?', [$r['id']]);
+        $this->ok($r['label'] . ' version removed.');}
 
     public function stream(string $id) {
         $v = DB::one("SELECT * FROM {videos} WHERE id = ? AND provider = 'local'", [(int)$id]) ?? abort(404);
@@ -138,6 +194,9 @@ class VideoController extends Controller {
         $v = DB::one('SELECT * FROM {videos} WHERE id = ?', [(int)$id]) ?? abort(404);
         if ($v['provider'] === 'local' && ($file = Media::path($v))) {
             @unlink($file);}
+        foreach (DB::col('SELECT source FROM {video_renditions} WHERE video_id = ?', [$v['id']]) as $src) {
+            @unlink(Media::DIR . '/' . basename($src));}
+        DB::delete('video_renditions', 'video_id = ?', [$v['id']]);
         DB::delete('videos', 'id = ?', [$v['id']]);
         Audit::log('video.deleted', 'video', (int)$v['id'], ['title' => $v['title']]);
         $this->ok('Video deleted.');}}

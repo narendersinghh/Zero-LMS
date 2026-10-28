@@ -14,18 +14,46 @@ use App\Core\Updater;
 
 class SystemController extends Controller {
     public function index() {
-        if (!Settings::get('cron_secret')) {
-            Settings::set(['cron_secret' => bin2hex(random_bytes(16))]);}
-        $info = ['PHP version' => PHP_VERSION, 'Database' => DB::val('SELECT VERSION()'), 'Server' => $_SERVER['SERVER_SOFTWARE'] ?? 'n/a', 'Max upload' => human_size(\App\Core\Uploads::maxUploadBytes()),
-            'Memory limit' => ini_get('memory_limit'), 'Max execution time' => ini_get('max_execution_time') . 's', 'Video storage used' => human_size((int)DB::val("SELECT COALESCE(SUM(size),0) FROM {videos} WHERE provider = 'local'")),
-            'Zip extension' => class_exists('ZipArchive') ? 'Yes' : 'Missing', 'cURL extension' => function_exists('curl_init') ? 'Yes' : 'Missing', 'OPcache' => function_exists('opcache_get_status') && @opcache_get_status(false) ? 'Enabled' : 'Off',
-            'fastcgi_finish_request' => function_exists('fastcgi_finish_request') ? 'Available (web cron runs after response)' : 'Unavailable (use real cron)'];
-        $writable = [];
-        foreach (['storage', 'storage/videos', 'storage/cache', 'storage/logs', 'storage/backups', 'uploads', '.env', 'app', 'assets'] as $p) {
-            $writable[$p] = is_writable(BASE_PATH . '/' . $p);}
-        return view('admin/system/index', ['info' => $info, 'writable' => $writable, 'modules' => ModuleManager::discover(), 'enabled' => ModuleManager::enabled(),
-            'backups' => Updater::backups(), 'last' => Settings::get('update_last_result'), 'lastCheck' => Settings::get('update_last_check'), 'pending' => Migrator::pending(),
-            'maintenance' => is_file(STORAGE_PATH . '/maintenance'), 's' => Settings::all(), 'version' => App::version()]);}
+        Scheduler::secret();
+        $s = Settings::all();
+        $cronLast = (string)($s['cron_last_run'] ?? '');
+        $cronAge = $cronLast ? time() - strtotime($cronLast . ' UTC') : null;
+        try {
+            $driver = (string)(\App\Core\Mailer::config()['driver'] ?? 'log');}
+        catch (\Throwable $e) {
+            $driver = 'log';}
+        $notWritable = [];
+        foreach (['storage', 'storage/videos', 'storage/cache', 'storage/logs', 'storage/backups', 'storage/sessions', 'uploads'] as $p) {
+            if (!is_writable(BASE_PATH . '/' . $p)) {
+                $notWritable[] = $p;}}
+        $codeWritable = is_writable(BASE_PATH . '/app') && is_writable(BASE_PATH . '/assets');
+        $pending = Migrator::pending();
+        $videoBytes = (int)DB::val("SELECT COALESCE(SUM(size),0) FROM {videos} WHERE provider = 'local'");
+        $free = @disk_free_space(STORAGE_PATH);
+        $opcache = function_exists('opcache_get_status') && @opcache_get_status(false);
+        $maintenance = is_file(STORAGE_PATH . '/maintenance');
+        // [state ok|warn|bad, title, detail]
+        $health = [
+            [PHP_VERSION_ID >= 80100 ? 'ok' : 'warn', 'PHP ' . PHP_VERSION, PHP_VERSION_ID >= 80100 ? 'Supported version' : 'Works, but PHP 8.1+ is recommended'],
+            ['ok', 'Database', (string)DB::val('SELECT VERSION()')],
+            [$notWritable ? 'bad' : 'ok', 'Storage folders', $notWritable ? 'Not writable: ' . implode(', ', $notWritable) : 'storage/ and uploads/ are writable'],
+            [$codeWritable ? 'ok' : 'warn', 'Code folders', $codeWritable ? 'Writable, one-click updates can replace files' : 'app/ or assets/ not writable, updates need write access'],
+            [class_exists('ZipArchive') ? 'ok' : 'bad', 'Zip extension', class_exists('ZipArchive') ? 'Available for updates & backups' : 'Missing, updates and backups need it'],
+            [function_exists('curl_init') ? 'ok' : 'bad', 'cURL extension', function_exists('curl_init') ? 'Available for GitHub & email APIs' : 'Missing, needed for updates'],
+            [$opcache ? 'ok' : 'warn', 'OPcache', $opcache ? 'Enabled, faster page loads' : 'Off. Ask your host to enable it for speed'],
+            [$cronAge !== null && $cronAge > 86400 ? 'warn' : 'ok', 'Scheduled tasks', $cronAge === null ? 'Automatic, starts with the next visit' : 'Automatic, last run ' . time_ago($cronLast)],
+            [$driver === 'log' ? 'warn' : 'ok', 'Email delivery', $driver === 'log' ? 'Log only, emails are not sent' : 'Sending via ' . strtoupper($driver)],
+            [$maintenance ? 'warn' : 'ok', 'Maintenance mode', $maintenance ? 'ON, students cannot access the site' : 'Off, site is live'],
+            [$free !== false && $free < 2 * 1073741824 ? 'warn' : 'ok', 'Video storage', human_size($videoBytes) . ' used' . ($free !== false ? ' · ' . human_size($free) . ' free' : '')],
+            [$pending ? 'warn' : 'ok', 'Database migrations', $pending ? count($pending) . ' pending, run them below' : 'Up to date'],
+            ['ok', 'Upload limit', human_size(\App\Core\Uploads::maxUploadBytes()) . ' per request (videos upload in chunks)'],
+            [ini_get('memory_limit') === '-1' || (int)ini_get('memory_limit') >= 128 ? 'ok' : 'warn', 'Memory limit', ini_get('memory_limit') === '-1' ? 'Unlimited' : (string)ini_get('memory_limit')],];
+        $score = ['ok' => 0, 'warn' => 0, 'bad' => 0];
+        foreach ($health as $h) {
+            $score[$h[0]]++;}
+        return view('admin/system/index', ['health' => $health, 'score' => $score, 'backups' => Updater::backups(), 'last' => Settings::get('update_last_result'), 'lastCheck' => Settings::get('update_last_check'),
+            'pending' => $pending, 'maintenance' => $maintenance, 's' => $s, 'version' => App::version(), 'cronAge' => $cronAge, 'cronLast' => $cronLast,
+            'mailPending' => (int)DB::val("SELECT COUNT(*) FROM {mail_queue} WHERE status = 'pending'"), 'moduleCount' => count(ModuleManager::enabled()) . '/' . count(ModuleManager::discover())]);}
 
     public function check() {
         try {
@@ -70,21 +98,15 @@ class SystemController extends Controller {
         Audit::log('settings.updater', null, null, ['repo' => $repo, 'channel' => $v['update_channel']]);
         $this->ok('Update source saved.');}
 
+    /** Legacy endpoint: modules are managed on /admin/modules now. */
     public function modules() {
-        $all = ModuleManager::discover();
-        $on = array_values(array_intersect(array_map('strval', $this->req->arr('modules')), array_keys($all)));
-        $ran = [];
-        foreach (array_diff($on, ModuleManager::enabled()) as $key) {
-            $ran = array_merge($ran, ModuleManager::migrate($key));}
-        Settings::set(['modules_enabled' => $on]);
-        Audit::log('modules.updated', null, null, ['enabled' => $on]);
-        $this->ok('Modules updated.' . ($ran ? ' Migrations: ' . implode(', ', $ran) : ''));}
+        return (new ModulesController())->save();}
 
     public function maintenance() {
         $on = !is_file(STORAGE_PATH . '/maintenance');
         Updater::maintenance($on);
         Audit::log('system.maintenance', null, null, ['on' => $on]);
-        $this->ok($on ? 'Maintenance mode enabled — only staff can access the site.' : 'Maintenance mode disabled.');}
+        $this->ok($on ? 'Maintenance mode enabled. Only staff can access the site.' : 'Maintenance mode disabled.');}
 
     public function cron() {
         $r = Scheduler::run();

@@ -1,0 +1,12 @@
+/* Charts (App\Core\Charts) */
+.chart-wrap{display:flex;flex-direction:column;gap:var(--s3)}
+.chart-box{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.6rem;padding-bottom:22px}.chart-plot{position:relative;height:var(--ch,220px)}.chart{position:absolute;inset:0;width:100%;height:100%;overflow:visible;display:block}.chart-yl{position:relative;height:var(--ch,220px);min-width:22px}.chart-yl span{position:absolute;right:0;transform:translateY(-50%);font-size:.7rem;color:var(--muted);white-space:nowrap}.chart-xl{position:absolute;left:0;right:0;top:calc(100% + 6px)}.chart-xl span{position:absolute;transform:translateX(-50%);font-size:.7rem;color:var(--muted);white-space:nowrap}.chart-xl span.first{transform:none}.chart-xl span.last{transform:translateX(-100%)}
+.chart-grid{stroke:var(--border);stroke-width:1;stroke-dasharray:3 5;vector-effect:non-scaling-stroke}
+.chart-hit{fill:transparent}.chart-hit:hover{fill:color-mix(in srgb,var(--text) 6%,transparent)}
+.spark{width:100%;height:34px;display:block}
+.donut{position:relative;display:grid;place-items:center;flex:none}.donut svg{position:absolute;inset:0;width:100%;height:100%}.donut>div{position:relative;text-align:center;line-height:1.1}.donut b{display:block;font-family:var(--font-heading);font-size:1.5rem}.donut small{color:var(--muted);font-size:.72rem}
+.funnel{display:flex;flex-direction:column;gap:.7rem}
+.funnel-row{display:grid;grid-template-columns:120px minmax(0,1fr) 54px 44px;align-items:center;gap:.75rem;font-size:.86rem}
+.funnel-l{color:var(--muted);font-weight:600}.funnel-row b{text-align:right;font-family:var(--font-heading)}.funnel-row small{text-align:right;color:var(--muted)}
+.funnel-bar{height:26px;border-radius:8px;background:var(--surface-2);overflow:hidden}.funnel-bar i{display:block;height:100%;border-radius:8px;transition:width .8s var(--ease)}
+@media (max-width:760px){.chart-plot,.chart-yl{height:min(var(--ch,220px),180px)}.chart-xl span:nth-child(even):not(.last),.chart-xl span:nth-last-child(2):not(.first){display:none}.funnel-row{grid-template-columns:86px minmax(0,1fr) 44px}.funnel-row small{display:none}}

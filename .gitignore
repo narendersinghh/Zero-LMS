@@ -10,9 +10,11 @@
 /storage/backups/*
 /storage/sessions/*
 /storage/private/*
+/storage/files/*
 !/storage/*/.gitkeep
 /storage/installed.lock
 /storage/maintenance
 /uploads/*
 !/uploads/.gitkeep
 !/uploads/.htaccess
+/assets/m/

@@ -95,6 +95,10 @@ function redirect(string $to, int $code = 302) {
     header('Location: ' . $to, true, $code);
     exit;}
 
+/** True for a same-site path like "/courses/x"; rejects "//host", "/\\host", schemes and control characters (open redirects). */
+function is_local_path(string $p): bool {
+    return $p !== '' && $p[0] === '/' && !preg_match('#^/[/\\\\]|[\\x00-\\x1f\\x7f\\\\]#', $p);}
+
 function back(array $errors = [], bool $withInput = true) {
     if ($errors) {
         Session::set('_errors', $errors);}
@@ -236,3 +240,79 @@ function selected($a, $b): string {
 
 function checked($v): string {
     return $v ? ' checked' : '';}
+
+/** Render HTML fragments contributed by modules through a filter (e.g. "lesson.panels"). */
+function hook_html(string $name, ...$args): string {
+    return implode('', \App\Core\Hooks::filter($name, [], ...$args));}
+
+function money($amount, string $cur = 'INR'): string {
+    return \App\Services\Payments\Payments::money($amount, $cur);}
+
+/** Public URL of a module asset: app/Modules/<Module>/assets/<file>. */
+/**
+ * URL for a module's CSS/JS/image. The file is copied once into assets/m/<Module>/ so the web server serves it
+ * directly (no PHP per request); if that folder is not writable it falls back to the /m/ PHP route.
+ */
+function module_asset(string $module, string $file): string {
+    $module = basename($module);
+    $file = basename($file);
+    $f = APP_PATH . '/Modules/' . $module . '/assets/' . $file;
+    $v = is_file($f) ? substr((string)filemtime($f), -6) : '1';
+    $pub = BASE_PATH . '/assets/m/' . $module . '/' . $file;
+    if (is_file($f) && (is_file($pub) && filemtime($pub) >= filemtime($f) || ((is_dir(dirname($pub)) || @mkdir(dirname($pub), 0755, true)) && @copy($f, $pub)))) {
+        return url('/assets/m/' . rawurlencode($module) . '/' . rawurlencode($file), ['v' => $v]);}
+    return url('/m/' . rawurlencode($module) . '/' . $file, ['v' => $v]);}
+
+const COURSE_TINTS = ['yellow', 'blue', 'pink', 'green', 'purple', 'orange'];
+const COURSE_ILLUS = ['rocket', 'bulb', 'laptop', 'palette', 'chart', 'book'];
+
+function course_tint(array $c): string {
+    $t = (string)($c['color'] ?? '');
+    return in_array($t, COURSE_TINTS, true) ? $t : COURSE_TINTS[((int)($c['id'] ?? 0)) % count(COURSE_TINTS)];}
+
+function course_illus(array $c): string {
+    $i = (string)($c['illustration'] ?? '');
+    $i = in_array($i, COURSE_ILLUS, true) ? $i : COURSE_ILLUS[((int)($c['id'] ?? 0)) % count(COURSE_ILLUS)];
+    return asset('img/illus/course-' . $i . '.svg');}
+
+/** Cover image or tinted illustration panel for a course. */
+/**
+ * URL of a resized copy of an uploaded image (created once with GD, cached under uploads/_thumbs).
+ * Falls back to the original when GD is missing or the file is not a JPEG/PNG/WebP.
+ */
+function thumb_url(?string $path, int $w = 640): string {
+    if (!$path) {
+        return '';}
+    $rel = ltrim($path, '/');
+    if (strpos($rel, '..') !== false) {
+        return '';}
+    $src = BASE_PATH . '/uploads/' . $rel;
+    $out = '_thumbs/' . $w . '/' . preg_replace('/\.\w+$/', '', $rel) . '.jpg';
+    $dst = BASE_PATH . '/uploads/' . $out;
+    if (is_file($dst) && filemtime($dst) >= @filemtime($src)) {
+        return upload_url($out);}
+    $info = function_exists('imagecreatetruecolor') && is_file($src) ? @getimagesize($src) : false;
+    $make = [IMAGETYPE_JPEG => 'imagecreatefromjpeg', IMAGETYPE_PNG => 'imagecreatefrompng', IMAGETYPE_WEBP => 'imagecreatefromwebp'][$info[2] ?? 0] ?? null;
+    if (!$info || !$make || !function_exists($make) || $info[0] <= $w || $info[0] * $info[1] > 40000000) {
+        return upload_url($path);}
+    $im = @$make($src);
+    if (!$im) {
+        return upload_url($path);}
+    $h = (int)round($info[1] * $w / $info[0]);
+    $t = imagecreatetruecolor($w, $h);
+    imagefill($t, 0, 0, imagecolorallocate($t, 255, 255, 255));
+    imagecopyresampled($t, $im, 0, 0, 0, 0, $w, $h, $info[0], $info[1]);
+    @mkdir(dirname($dst), 0755, true);
+    $ok = @imagejpeg($t, $dst, 82);
+    imagedestroy($im);
+    imagedestroy($t);
+    return upload_url($ok ? $out : $path);}
+
+function course_visual(array $c, string $class = '', int $w = 640): string {
+    if (!empty($c['cover_image'])) {
+        // A real <img> so the browser can lazy-load and decode it off the main thread (background images cannot).
+        return '<div class="cv ' . e($class) . '"><img class="cv-img" src="' . e(thumb_url($c['cover_image'], $w)) . '" alt="" loading="lazy" decoding="async"></div>';}
+    return '<div class="cv cv-illus tint-' . e(course_tint($c)) . ' ' . e($class) . '"><img src="' . e(course_illus($c)) . '" alt="" loading="lazy"></div>';}
+
+function illus(string $name, string $class = '', string $alt = '', bool $lazy = true): string {
+    return '<img class="illus ' . e($class) . '" src="' . e(asset('img/illus/' . $name . '.svg')) . '" alt="' . e($alt) . '"' . ($lazy ? ' loading="lazy"' : ' fetchpriority="high"') . '>';}

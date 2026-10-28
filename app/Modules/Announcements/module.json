@@ -1,0 +1,15 @@
+{
+ "name": "Announcements",
+ "description": "Post updates to all students or one course. Shown on the dashboard and course pages, with in-app and email notifications.",
+ "version": "1.0.0",
+ "author": "Zeroes",
+ "icon": "bell",
+ "color": "purple",
+ "category": "Engagement",
+ "settings": "/admin/announcements",
+ "features": [
+  "All students or one course",
+  "Pinned & scheduled posts",
+  "In-app + email notifications"
+ ]
+}

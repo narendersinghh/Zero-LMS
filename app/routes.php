@@ -3,6 +3,8 @@
 $r = app()->router();
 
 $r->get('/', function () {
+    if (!auth() && setting('store_enabled') && setting('store_home', true)) {
+        return (new \App\Controllers\StoreController())->catalog();}
     redirect(auth() ? (can('admin.access') ? '/admin' : '/dashboard') : '/login');});
 
 // Authentication
@@ -16,6 +18,18 @@ $r->post('/password/reset/{token}', 'AuthController@reset');
 $r->get('/password/setup/{token}', 'AuthController@showReset');
 $r->post('/password/setup/{token}', 'AuthController@reset');
 $r->get('/cron/run', 'SystemCronController@run');
+$r->get('/register', 'StoreController@showRegister', ['guest']);
+$r->post('/register', 'StoreController@register', ['guest']);
+
+// Public catalog & shareable course links (anyone can buy + create an account)
+$r->get('/store', 'StoreController@catalog');
+$r->get('/explore', function () {
+    redirect('/store');});
+$r->get('/c/{slug}', 'StoreController@show');
+$r->get('/c/{slug}/checkout', 'StoreController@checkout');
+$r->post('/c/{slug}/checkout', 'StoreController@placeOrder');
+$r->get('/c/{slug}/quote', 'StoreController@quote');
+$r->get('/m/{module}/{file}', 'StoreController@moduleAsset');
 
 // Student area
 $r->group('', ['auth'], function ($r) {
@@ -26,6 +40,12 @@ $r->group('', ['auth'], function ($r) {
     $r->post('/lessons/{id}/progress', 'LessonController@progress');
     $r->post('/lessons/{id}/complete', 'LessonController@complete');
     $r->get('/media/stream/{token}', 'MediaController@stream');
+    $r->get('/lessons/{id}/source', 'LessonController@source');
+    $r->get('/files/{name}', 'FileController@show');
+    $r->get('/orders', 'StoreController@orders');
+    $r->get('/orders/{ref}/pay', 'StoreController@pay');
+    $r->post('/orders/{ref}/confirm', 'StoreController@confirm');
+    $r->post('/orders/{ref}/cancel', 'StoreController@cancel');
     $r->get('/notifications', 'NotificationController@index');
     $r->post('/notifications/read-all', 'NotificationController@readAll');
     $r->get('/notifications/{id}/open', 'NotificationController@open');
@@ -52,6 +72,7 @@ $r->group('/admin', ['auth', 'staff', 'can:admin.access'], function ($r) {
         $r->post('/modules/{id}', 'Admin\CurriculumController@updateModule');
         $r->post('/modules/{id}/delete', 'Admin\CurriculumController@deleteModule');
         $r->post('/courses/{id}/reorder', 'Admin\CurriculumController@reorder');
+        $r->post('/editor/upload', 'FileController@upload');
         $r->get('/courses/{id}/lessons/create', 'Admin\LessonController@create');
         $r->post('/courses/{id}/lessons', 'Admin\LessonController@store');
         $r->get('/lessons/{id}/edit', 'Admin\LessonController@edit');
@@ -66,6 +87,9 @@ $r->group('/admin', ['auth', 'staff', 'can:admin.access'], function ($r) {
         $r->post('/external', 'Admin\VideoController@external');
         $r->post('/scan', 'Admin\VideoController@scan');
         $r->get('/{id}/stream', 'Admin\VideoController@stream');
+        $r->get('/{id}/qualities', 'Admin\VideoController@qualities');
+        $r->post('/{id}/qualities', 'Admin\VideoController@saveQualityLabel');
+        $r->post('/renditions/{id}/delete', 'Admin\VideoController@deleteRendition');
         $r->post('/{id}', 'Admin\VideoController@update');
         $r->post('/{id}/delete', 'Admin\VideoController@destroy');});
 
@@ -81,6 +105,13 @@ $r->group('/admin', ['auth', 'staff', 'can:admin.access'], function ($r) {
         $r->post('/{id}/invite', 'Admin\StudentController@invite');
         $r->post('/{id}/status', 'Admin\StudentController@status');
         $r->post('/{id}/delete', 'Admin\StudentController@destroy');});
+
+    $r->group('/orders', ['can:orders.manage'], function ($r) {
+        $r->get('', 'Admin\\OrderController@index');
+        $r->get('/export', 'Admin\\OrderController@export');
+        $r->post('/{id}/approve', 'Admin\\OrderController@approve');
+        $r->post('/{id}/reject', 'Admin\\OrderController@reject');
+        $r->get('/{id}/proof', 'Admin\\OrderController@proof');});
 
     $r->group('/enrollments', ['can:enrollments.manage'], function ($r) {
         $r->get('', 'Admin\EnrollmentController@index');
@@ -111,6 +142,11 @@ $r->group('/admin', ['auth', 'staff', 'can:admin.access'], function ($r) {
 
     $r->get('/settings', function () {
         redirect('/admin/settings/general');});
+    $r->get('/settings/mail', 'Admin\MailSettingsController@show', ['can:mail.configure']);
+    $r->post('/settings/mail', 'Admin\MailSettingsController@save', ['can:mail.configure']);
+    $r->post('/settings/mail/test', 'Admin\MailSettingsController@test', ['can:mail.configure']);
+    $r->get('/modules', 'Admin\ModulesController@index', ['can:modules.manage']);
+    $r->post('/modules', 'Admin\ModulesController@save', ['can:modules.manage']);
     $r->get('/settings/{tab}', 'Admin\SettingsController@show', ['can:branding.manage']);
     $r->post('/settings/{tab}', 'Admin\SettingsController@save', ['can:branding.manage']);
     $r->get('/logs', 'Admin\LogController@index', ['can:logs.view']);

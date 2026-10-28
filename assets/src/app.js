@@ -1,6 +1,15 @@
-/* Zeroes LMS — shared UI behaviours (no dependencies). */
+/* Zeroes LMS: shared UI behaviours (no dependencies). */
 (function () {
   'use strict';
+  /* Fill a modal form from data-fill JSON: _action sets the form action, _ext toggles [data-ext-only]/[data-local-only]. */
+  function fill(m, o) {
+    var f = m.querySelector('form'); if (!f) { return; }
+    Object.keys(o).forEach(function (k) {
+      if (k === '_action') { f.action = o[k]; return; }
+      if (k === '_ext') { Array.prototype.forEach.call(m.querySelectorAll('[data-ext-only]'), function (n) { n.hidden = !o[k]; }); Array.prototype.forEach.call(m.querySelectorAll('[data-local-only]'), function (n) { n.hidden = !!o[k]; }); return; }
+      var el = f.elements[k]; if (el) { el.value = o[k] == null ? '' : o[k]; }
+    });
+  }
   var d = document, $ = function (s, c) { return (c || d).querySelector(s); }, $$ = function (s, c) { return Array.prototype.slice.call((c || d).querySelectorAll(s)); };
   var csrf = ($('meta[name="csrf-token"]') || {}).content || '';
   window.Zx = {
@@ -42,7 +51,7 @@
     if (c && !window.confirm(c.getAttribute('data-confirm'))) { e.preventDefault(); e.stopPropagation(); return; }
     /* Modals */
     var mo = e.target.closest('[data-modal-open]');
-    if (mo) { var m = d.getElementById(mo.getAttribute('data-modal-open')); if (m && m.showModal) { m.showModal(); m.dispatchEvent(new CustomEvent('zx:open')); } return; }
+    if (mo) { var m = d.getElementById(mo.getAttribute('data-modal-open')); if (m && m.showModal) { if (mo.hasAttribute('data-fill')) { fill(m, JSON.parse(mo.getAttribute('data-fill'))); } m.showModal(); m.dispatchEvent(new CustomEvent('zx:open')); } return; }
     var mc = e.target.closest('[data-modal-close]');
     if (mc) { mc.closest('dialog').close(); return; }
     if (e.target.tagName === 'DIALOG') { var r = e.target.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) { e.target.close(); } return; }
@@ -77,7 +86,7 @@
   /* Countdowns */
   function fmt(s) { if (s <= 0) { return 'now'; } var dd = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return dd ? dd + 'd ' + h + 'h' : (h ? h + 'h ' + m + 'm' : Math.max(1, m) + 'm'); }
   var cds = $$('[data-countdown]');
-  if (cds.length) { var tick = function () { var now = Date.now() / 1000; cds.forEach(function (c) { var s = +c.getAttribute('data-countdown') - now; c.textContent = s <= 0 ? 'Unlocked — refresh' : fmt(s); }); }; tick(); setInterval(tick, 30000); }
+  if (cds.length) { var tick = function () { var now = Date.now() / 1000; cds.forEach(function (c) { var s = +c.getAttribute('data-countdown') - now; c.textContent = s <= 0 ? 'Unlocked, refresh' : fmt(s); }); }; tick(); setInterval(tick, 30000); }
   /* Password strength */
   $$('[data-strength]').forEach(function (i) {
     var bar = i.closest('.field').querySelector('.strength i');
@@ -98,6 +107,25 @@
       Zx.post(cb.getAttribute('data-complete'), done ? { undo: '1' } : {}).then(function (j) { Zx.markComplete(j.completed, j.course); }).catch(function (er) { Zx.toast(er.message, 'error'); }).then(function () { cb.classList.remove('is-loading'); });
     });
   }
+  /* Checkout price preview: any [data-apply-coupon] button re-quotes using input[name=coupon] (coupon module renders these). */
+  var co = $('[data-checkout]');
+  if (co) {
+    co.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-apply-coupon]');
+      if (!b) { return; }
+      e.preventDefault();
+      var inp = co.querySelector('[name="coupon"]'), msg = co.querySelector('[data-coupon-msg]');
+      fetch(co.getAttribute('data-quote') + '?coupon=' + encodeURIComponent(inp ? inp.value.trim() : ''), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } }).then(function (r) { return r.json(); }).then(function (j) {
+        $$('[data-disc-row]', d).forEach(function (r) { r.hidden = !(j.discount > 0); });
+        var dl = $('[data-disc-label]'); if (dl) { dl.textContent = j.label || ''; }
+        var ds = $('[data-disc]'); if (ds) { ds.textContent = j.discount_h; }
+        var t = $('[data-total]'); if (t) { t.textContent = j.free ? 'Free' : j.final_h; }
+        var cta = $('[data-cta]', co); if (cta) { cta.textContent = j.free ? 'Get free access' : 'Continue to pay ' + j.final_h; }
+        var po = $('[data-pay-opts]', co); if (po) { po.hidden = !!j.free; }
+        if (msg) { msg.textContent = j.error || (j.discount > 0 ? 'Coupon applied. You save ' + j.discount_h : ''); msg.className = 'small ' + (j.error ? 'danger' : 'success'); }
+      });
+    });
+  }
   Zx.markComplete = function (done, course) {
     if (!cb) { return; }
     cb.setAttribute('data-done', done ? '1' : '0');
@@ -108,6 +136,6 @@
       var p = $('[data-course-progress]'); if (p) { p.textContent = course.completed + '/' + course.total + ' complete'; }
       var ring = $('.side-curriculum .ring'); if (ring) { ring.querySelector('.ring-fg').setAttribute('stroke-dasharray', course.percent + ' 100'); ring.querySelector('b').textContent = course.percent + '%'; }
     }
-    if (done) { Zx.toast('Lesson completed — nice work!', 'success'); }
+    if (done) { Zx.toast('Lesson completed. Nice work!', 'success'); }
   };
 })();

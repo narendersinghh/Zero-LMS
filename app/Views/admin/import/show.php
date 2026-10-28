@@ -1,7 +1,7 @@
 <?php
 $layout = 'admin';
 $title = 'Import results';
-$crumbs = ['CSV import' => '/admin/import'];
+$crumbs = ['Students' => '/admin/students', 'Import CSV' => '/admin/import'];
 ?>
 <div class="kpis">
 <div class="kpi"><small>Rows in file</small><b><?= (int)$imp['total'] ?></b></div>

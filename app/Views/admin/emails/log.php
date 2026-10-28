@@ -1,10 +1,11 @@
 <?php
 $layout = 'admin';
 $title = 'Email log';
-$crumbs = ['Email templates' => '/admin/emails'];
+$crumbs = ['Settings' => '/admin/settings', 'Email templates' => '/admin/emails'];
 $actions = '<form method="post" action="' . e(url('/admin/mail-log/process')) . '" class="inline">' . csrf_field() . '<button class="btn btn-primary btn-sm">' . icon('refresh') . 'Send queued now</button></form>';
 ?>
-<?php if ($driver === 'log'): ?><div class="alert alert-warning"><?= icon('alert') ?><span>Mail driver is <b>log</b> — emails are written to <code>storage/logs/mail-*.log</code> instead of being delivered. <?php if (can('mail.configure')): ?><a href="<?= e(url('/admin/settings/mail')) ?>">Configure SMTP</a><?php endif; ?></span></div><?php endif; ?>
+<?php $tab = 'emails'; include \App\Core\View::find('admin/settings/_tabs'); ?>
+<?php if ($driver === 'log'): ?><div class="alert alert-warning"><?= icon('alert') ?><span>Mail driver is <b>log</b>, so emails are written to <code>storage/logs/mail-*.log</code> instead of being delivered. <?php if (can('mail.configure')): ?><a href="<?= e(url('/admin/settings/mail')) ?>">Configure SMTP</a><?php endif; ?></span></div><?php endif; ?>
 <form class="toolbar" method="get">
 <div class="search grow"><?= icon('search') ?><input type="search" name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="Search recipient or subject…"></div>
 <select name="status" data-autosubmit><option value="">All</option><?php foreach (['pending' => 'Queued', 'sent' => 'Sent', 'failed' => 'Failed'] as $k => $v): ?><option value="<?= $k ?>"<?= selected($k, $_GET['status'] ?? '') ?>><?= $v ?></option><?php endforeach; ?></select>
@@ -21,3 +22,4 @@ $actions = '<form method="post" action="' . e(url('/admin/mail-log/process')) . 
 <?php endforeach; ?>
 </tbody></table></div></div>
 <?= $pg->links() ?>
+<?php include \App\Core\View::find('admin/settings/_end'); ?>

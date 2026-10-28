@@ -41,6 +41,10 @@ function minify_js(string $c): string {
 foreach (glob($src . '/*.{css,js}', GLOB_BRACE) as $f) {
     $ext = pathinfo($f, PATHINFO_EXTENSION);
     $code = file_get_contents($f);
+    // Feature stylesheets in assets/src/parts/*.css are appended to app.css (one request for the browser).
+    if (basename($f) === 'app.css') {
+        foreach (glob($src . '/parts/*.css') ?: [] as $part) {
+            $code .= "\n" . file_get_contents($part);}}
     $min = $ext === 'css' ? minify_css($code) : minify_js($code);
     $target = $dist . '/' . pathinfo($f, PATHINFO_FILENAME) . '.min.' . $ext;
     file_put_contents($target, $min . "\n");

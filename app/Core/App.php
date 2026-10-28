@@ -48,12 +48,15 @@ class App {
         Hooks::fire('app.routes', $this->router);
         if (is_file(STORAGE_PATH . '/maintenance') && !Auth::isStaff() && !preg_match('#^/(login|logout|password)#', $path)) {
             throw new HttpException(503, 'We are performing scheduled maintenance. Please check back shortly.');}
-        $this->dispatch();
-        Scheduler::afterResponse();}
+        register_shutdown_function([Scheduler::class, 'afterResponse']);
+        $this->dispatch();}
 
     private function dispatch(): void {
         $out = $this->router->dispatch($this->request);
         if (is_string($out)) {
+            // Staff can see where page time goes in the browser's dev tools (Network → Timing).
+            if (!headers_sent() && Auth::isStaff()) {
+                header(sprintf('Server-Timing: app;dur=%.1f, db;dur=%.1f;desc="%d queries"', (microtime(true) - ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true))) * 1000, DB::$time * 1000, DB::$queries));}
             echo $out;}}
 
     private function sendSecurityHeaders(): void {
@@ -62,6 +65,6 @@ class App {
         header('X-Content-Type-Options: nosniff');
         header('Referrer-Policy: strict-origin-when-cross-origin');
         header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
-        header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; frame-src 'self' https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
+        header("Content-Security-Policy: default-src 'self'; script-src 'self' https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; frame-src 'self' https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
         if ($this->request->isSecure()) {
             header('Strict-Transport-Security: max-age=15552000');}}}

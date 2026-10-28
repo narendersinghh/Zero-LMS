@@ -1,4 +1,4 @@
-/* Zeroes LMS — admin tools: rich editor, chunked uploader, video picker, curriculum drag & drop, live theme preview. */
+/* Zeroes LMS: admin tools: rich editor, chunked uploader, video picker, curriculum drag & drop, live theme preview. */
 (function () {
   'use strict';
   var d = document, $ = function (s, c) { return (c || d).querySelector(s); }, $$ = function (s, c) { return Array.prototype.slice.call((c || d).querySelectorAll(s)); };
@@ -66,9 +66,9 @@
   /* ---------- Rich text editor (contenteditable, sanitized server-side) ---------- */
   var lastEditor = null;
   $$('[data-editor]').forEach(function (wrap) {
-    var ta = $('textarea', wrap), bar = d.createElement('div'), area = d.createElement('div'), src = false;
+    var ta = $('textarea', wrap), bar = d.createElement('div'), area = d.createElement('div'), src = false, upUrl = wrap.getAttribute('data-upload'), range = null, pick = null;
     bar.className = 'ed-bar';
-    var tools = [['b', 'bold', 'B'], ['i', 'italic', 'I'], ['u', 'underline', 'U'], ['|'], ['h2', 'formatBlock:h2', 'H2'], ['h3', 'formatBlock:h3', 'H3'], ['p', 'formatBlock:p', '¶'], ['q', 'formatBlock:blockquote', '❝'], ['|'], ['ul', 'insertUnorderedList', '• List'], ['ol', 'insertOrderedList', '1. List'], ['|'], ['a', 'link', 'Link'], ['img', 'image', 'Image'], ['hr', 'insertHorizontalRule', '—'], ['x', 'removeFormat', 'Clear'], ['|'], ['src', 'source', '</>']];
+    var tools = [['b', 'bold', 'B'], ['i', 'italic', 'I'], ['u', 'underline', 'U'], ['|'], ['h2', 'formatBlock:h2', 'H2'], ['h3', 'formatBlock:h3', 'H3'], ['p', 'formatBlock:p', '¶'], ['q', 'formatBlock:blockquote', '❝'], ['|'], ['ul', 'insertUnorderedList', '• List'], ['ol', 'insertOrderedList', '1. List'], ['|'], ['a', 'link', 'Link'], ['img', 'image', 'Image']].concat(upUrl ? [['f', 'attach', '📎 File']] : []).concat([['hr', 'insertHorizontalRule', 'Line'], ['x', 'removeFormat', 'Clear'], ['|'], ['src', 'source', '</>']]);
     tools.forEach(function (t) {
       if (t[0] === '|') { var s = d.createElement('span'); s.className = 'ed-sep'; bar.appendChild(s); return; }
       var b = d.createElement('button'); b.type = 'button'; b.textContent = t[2]; b.title = t[1]; b.setAttribute('data-cmd', t[1]); bar.appendChild(b);
@@ -77,9 +77,47 @@
     var srcTa = d.createElement('textarea'); srcTa.className = 'ed-src'; srcTa.hidden = true;
     wrap.insertBefore(bar, ta); wrap.insertBefore(area, ta); wrap.insertBefore(srcTa, ta);
     function sync() { ta.value = src ? srcTa.value : area.innerHTML; }
+    /* Uploads: images are inserted inline, other files as a download card. Remembers the caret so the picker dialog does not lose it. */
+    function keep() { var sel = window.getSelection(); if (sel.rangeCount && area.contains(sel.getRangeAt(0).commonAncestorContainer)) { range = sel.getRangeAt(0).cloneRange(); } }
+    /* Each upload gets its own paragraph after the top-level block holding the caret, so it never lands mid-sentence or inside a list. */
+    function place(node) {
+      var p = d.createElement('p'), top = range ? range.startContainer : null;
+      while (top && top.parentNode !== area) { top = top.parentNode; }
+      p.appendChild(node);
+      if (top && top.nextSibling) { area.insertBefore(p, top.nextSibling); } else { area.appendChild(p); }
+      range = d.createRange(); range.setStartAfter(p); range.collapse(true);
+    }
+    function el(tag, cls, txt) { var n = d.createElement(tag); if (cls) { n.className = cls; } if (txt != null) { n.textContent = txt; } return n; }
+    function upload(files) {
+      Array.prototype.forEach.call(files, function (f) {
+        var ph = el('span', 'ed-uploading', 'Uploading ' + f.name + '…'); place(ph);
+        var fd = new FormData(); fd.append('file', f);
+        Zx.post(upUrl, fd).then(function (j) {
+          var n;
+          if (j.kind === 'image') { n = el('img'); n.src = j.url; n.alt = j.name.replace(/\.\w+$/, ''); if (j.width) { n.width = j.width; n.height = j.height; } }
+          else { n = el('a', 'file-chip'); n.href = j.url; n.target = '_blank'; n.title = j.name; n.appendChild(el('span', 'fc-ext', j.ext.toUpperCase())); n.appendChild(el('span', 'fc-name', j.name)); n.appendChild(el('span', 'fc-size', j.size)); }
+          ph.replaceWith(n); sync();
+        }).catch(function (er) { (ph.parentNode.childNodes.length === 1 ? ph.parentNode : ph).remove(); Zx.toast(er.message, 'error'); sync(); });
+      });
+    }
+    if (upUrl) {
+      pick = el('input'); pick.type = 'file'; pick.multiple = true; pick.hidden = true; wrap.appendChild(pick);
+      pick.addEventListener('change', function () { if (pick.files.length) { upload(pick.files); } pick.value = ''; });
+      area.addEventListener('keyup', keep); area.addEventListener('mouseup', keep); area.addEventListener('blur', keep);
+      area.addEventListener('dragover', function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') > -1) { e.preventDefault(); area.classList.add('drop'); } });
+      area.addEventListener('dragleave', function () { area.classList.remove('drop'); });
+      area.addEventListener('drop', function (e) {
+        if (!e.dataTransfer.files.length) { return; }
+        e.preventDefault(); area.classList.remove('drop');
+        var r = d.caretRangeFromPoint ? d.caretRangeFromPoint(e.clientX, e.clientY) : null; if (r) { range = r; }
+        upload(e.dataTransfer.files);
+      });
+    }
     area.addEventListener('input', sync); srcTa.addEventListener('input', sync);
     area.addEventListener('focus', function () { lastEditor = { area: area, wrap: wrap }; });
     area.addEventListener('paste', function (e) {
+      var cd = e.clipboardData || window.clipboardData;
+      if (upUrl && cd.files && cd.files.length) { e.preventDefault(); keep(); upload(cd.files); return; }
       var html = (e.clipboardData || window.clipboardData).getData('text/html');
       if (html) { e.preventDefault(); var tmp = d.createElement('div'); tmp.innerHTML = html; $$('script,style,meta,link', tmp).forEach(function (n) { n.remove(); }); $$('*', tmp).forEach(function (n) { n.removeAttribute('style'); n.removeAttribute('class'); }); d.execCommand('insertHTML', false, tmp.innerHTML); }
     });
@@ -90,7 +128,10 @@
       if (c === 'source') { src = !src; if (src) { srcTa.value = area.innerHTML; } else { area.innerHTML = srcTa.value; } srcTa.hidden = !src; area.hidden = src; b.classList.toggle('on', src); sync(); return; }
       area.focus();
       if (c === 'link') { var u = prompt('Link URL (https://…)'); if (u) { d.execCommand('createLink', false, u); } }
-      else if (c === 'image') { var iu = prompt('Image URL (https://…)'); if (iu) { d.execCommand('insertImage', false, iu); } }
+      else if (c === 'image' || c === 'attach') {
+        if (upUrl && !(c === 'image' && e.shiftKey)) { pick.accept = c === 'image' ? 'image/png,image/jpeg,image/webp,image/gif' : '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.zip,.mp3,image/*'; pick.click(); return; }
+        var iu = prompt('Image URL (https://…)'); if (iu) { d.execCommand('insertImage', false, iu); }
+      }
       else if (c.indexOf('formatBlock:') === 0) { d.execCommand('formatBlock', false, '<' + c.split(':')[1] + '>'); }
       else { d.execCommand(c, false, null); }
       sync();
@@ -115,7 +156,7 @@
     zone.addEventListener('dragleave', function () { zone.classList.remove('over'); });
     zone.addEventListener('drop', function (e) { e.preventDefault(); zone.classList.remove('over'); add(e.dataTransfer.files); });
     input.addEventListener('change', function () { add(input.files); input.value = ''; });
-    function add(files) { Array.prototype.forEach.call(files, function (f) { var row = d.createElement('div'); row.className = 'uq'; row.innerHTML = '<div class="row between"><b>' + esc(f.name) + '</b><small class="muted">' + (f.size / 1048576).toFixed(1) + ' MB</small></div><div class="progress"><i></i></div><small class="muted st">Waiting…</small>'; queue.appendChild(row); list.push({ f: f, row: row }); }); next(); }
+    function add(files) { var need = $('[data-up-field][required]', up); if (need && !need.value) { Zx.toast('Choose the quality first.', 'error'); need.focus(); return; } Array.prototype.forEach.call(files, function (f) { var row = d.createElement('div'); row.className = 'uq'; row.innerHTML = '<div class="row between"><b>' + esc(f.name) + '</b><small class="muted">' + (f.size / 1048576).toFixed(1) + ' MB</small></div><div class="progress"><i></i></div><small class="muted st">Waiting…</small>'; queue.appendChild(row); list.push({ f: f, row: row }); }); next(); }
     function next() {
       if (busy || !list.length) { return; }
       busy = true;
@@ -123,7 +164,7 @@
       videoDuration(f).then(function (dur) {
         (function send() {
           var fd = new FormData();
-          fd.append('upload_id', id); fd.append('index', i); fd.append('total', total); fd.append('name', f.name); fd.append('duration', dur); fd.append('chunk', f.slice(i * size, (i + 1) * size), 'chunk');
+          fd.append('upload_id', id); fd.append('index', i); fd.append('total', total); fd.append('name', f.name); fd.append('duration', dur); fd.append('chunk', f.slice(i * size, (i + 1) * size), 'chunk'); $$('[data-up-field]', up).forEach(function (x) { fd.append(x.name, x.value); });
           Zx.post(url, fd).then(function (j) {
             i++; tries = 0; bar.style.width = (i / total * 100) + '%'; stEl.textContent = 'Uploading… ' + Math.round(i / total * 100) + '%';
             if (i < total) { send(); return; }

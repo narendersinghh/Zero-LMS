@@ -11,14 +11,15 @@ use App\Core\Settings;
 use App\Core\Uploads;
 
 class SettingsController extends Controller {
-    public const TABS = ['general' => ['General', 'settings'], 'branding' => ['Branding & theme', 'palette'], 'mail' => ['Email delivery', 'mail'], 'video' => ['Video security', 'shield'], 'learning' => ['Learning & notifications', 'sparkles']];
+    public const TABS = ['general' => ['General', 'settings'], 'branding' => ['Branding & theme', 'palette'], 'mail' => ['Email delivery', 'mail'], 'video' => ['Video security', 'shield'], 'learning' => ['Learning & notifications', 'sparkles'], 'payments' => ['Payments', 'key'], 'store' => ['Store', 'grid']];
 
     public function show(string $tab) {
         if (!isset(self::TABS[$tab])) {
             abort(404);}
-        if ($tab === 'mail' && !Auth::can('mail.configure')) {
+        if (($tab === 'mail' && !Auth::can('mail.configure')) || ($tab === 'payments' && !Auth::can('payments.configure'))) {
             abort(403);}
-        return view('admin/settings/' . $tab, ['tab' => $tab, 's' => Settings::all(), 'tabs' => self::TABS, 'timezones' => \DateTimeZone::listIdentifiers()]);}
+        $extra = $tab === 'store' ? ['courses' => \App\Core\DB::all("SELECT id, title, slug, status, is_public, price, sale_price, currency, category FROM {courses} WHERE status <> 'archived' ORDER BY sort_order, id DESC")] : [];
+        return view('admin/settings/' . $tab, $extra + ['tab' => $tab, 's' => Settings::all(), 'tabs' => self::TABS, 'timezones' => \DateTimeZone::listIdentifiers()]);}
 
     public function save(string $tab) {
         if (!isset(self::TABS[$tab])) {
@@ -80,10 +81,31 @@ class SettingsController extends Controller {
                 if ($this->req->str('clear_bunny_key') === '1') {
                     $v['bunny_token_key'] = '';}
                 break;
+            case 'payments':
+                if (!Auth::can('payments.configure')) {
+                    abort(403);}
+                $vpa = $in('upi_vpa');
+                if ($vpa !== '' && !preg_match('/^[A-Za-z0-9._-]{2,}@[A-Za-z0-9.-]{2,}$/', $vpa)) {
+                    flash('error', 'Enter a valid UPI ID, e.g. name@bank.');
+                    back();}
+                $v = ['upi_enabled' => $this->req->bool('upi_enabled'), 'upi_vpa' => $vpa, 'upi_payee_name' => mb_substr($in('upi_payee_name'), 0, 60), 'upi_instructions' => mb_substr($in('upi_instructions'), 0, 1000),
+                    'upi_provisional_access' => $this->req->bool('upi_provisional_access'), 'upi_require_proof' => $this->req->bool('upi_require_proof'), 'allow_registration' => $this->req->bool('allow_registration')];
+                break;
+            case 'store':
+                $this->validate(['store_title' => 'required|max:80', 'store_subtitle' => 'max:200']);
+                $v = ['store_enabled' => $this->req->bool('store_enabled'), 'store_home' => $this->req->bool('store_home'), 'store_title' => $in('store_title'), 'store_subtitle' => $in('store_subtitle')];
+                $listed = array_values(array_filter(array_map('intval', (array)$this->req->input('listed', []))));
+                // Listing a course in the store is the same flag as its public sales page (course managers only).
+                if (!Auth::can('courses.manage')) {
+                    break;}
+                \App\Core\DB::run("UPDATE {courses} SET is_public = 0 WHERE status <> 'archived'");
+                if ($listed) {
+                    \App\Core\DB::run('UPDATE {courses} SET is_public = 1 WHERE id IN (' . \App\Core\DB::in($listed) . ')', $listed);}
+                break;
             case 'learning':
                 $quotes = array_values(array_filter(array_map('trim', preg_split('/\r?\n/', (string)$this->req->input('quotes', '')))));
                 $v = ['show_quotes' => $this->req->bool('show_quotes'), 'quotes' => $quotes, 'notify_lesson_unlock' => $this->req->bool('notify_lesson_unlock'), 'email_lesson_unlock' => $this->req->bool('email_lesson_unlock'),
-                    'expiry_reminder_days' => max(0, min(30, (int)$in('expiry_reminder_days', '3'))), 'web_cron' => $this->req->bool('web_cron')];
+                    'expiry_reminder_days' => max(0, min(30, (int)$in('expiry_reminder_days', '3')))];
                 break;}
         Settings::set($v);
         Audit::log('settings.updated', 'settings', null, ['tab' => $tab, 'keys' => array_keys($v)]);

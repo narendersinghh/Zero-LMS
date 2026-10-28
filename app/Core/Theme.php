@@ -6,11 +6,17 @@ class Theme {
     public const FONTS = ['Inter', 'Inter Tight', 'Manrope', 'Plus Jakarta Sans', 'DM Sans', 'Poppins', 'Outfit', 'Sora', 'Space Grotesk', 'Urbanist', 'Lexend', 'Montserrat', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Work Sans', 'Rubik', 'Figtree', 'Onest', 'Geist', 'Playfair Display', 'Merriweather', 'Lora', 'System UI'];
 
     public static function fontsHref(): string {
-        $fams = array_unique(array_filter([Settings::get('heading_font'), Settings::get('body_font')], fn($f) => $f && $f !== 'System UI'));
+        // Inter and Inter Tight ship with the app (assets/fonts), so only other picks load from Google.
+        $fams = array_unique(array_filter([Settings::get('heading_font'), Settings::get('body_font')], fn($f) => $f && !in_array($f, ['System UI', 'Inter', 'Inter Tight'], true)));
         if (!$fams) {
             return '';}
         $q = implode('&', array_map(fn($f) => 'family=' . str_replace(' ', '+', $f) . ':wght@400;500;600;700;800', $fams));
         return 'https://fonts.googleapis.com/css2?' . $q . '&display=swap';}
+
+    /** Self-hosted font files worth preloading for the current branding (Latin subset). */
+    public static function preloadFonts(): array {
+        $map = ['Inter' => 'fonts/inter-latin.woff2', 'Inter Tight' => 'fonts/inter-tight-latin.woff2'];
+        return array_values(array_unique(array_filter(array_map(fn($f) => $map[$f] ?? null, [Settings::get('heading_font'), Settings::get('body_font')]))));}
 
     private static function font(string $f): string {
         $stack = "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";

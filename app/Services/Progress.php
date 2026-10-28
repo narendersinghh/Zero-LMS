@@ -8,8 +8,8 @@ use App\Core\Settings;
 class Progress {
     /** Record a lesson view (upsert). */
     public static function touch(int $userId, array $lesson): void {
-        DB::run('INSERT INTO {lesson_progress} (user_id, lesson_id, course_id, views, last_viewed_at, created_at) VALUES (?,?,?,1,?,?) ON DUPLICATE KEY UPDATE views = views + 1, last_viewed_at = VALUES(last_viewed_at)', [$userId, (int)$lesson['id'], (int)$lesson['course_id'], now(), now()]);
-        DB::run('UPDATE {enrollments} SET last_accessed_at = ? WHERE user_id = ? AND course_id = ?', [now(), $userId, (int)$lesson['course_id']]);
+        $new = DB::run('INSERT INTO {lesson_progress} (user_id, lesson_id, course_id, views, last_viewed_at, created_at) VALUES (?,?,?,1,?,?) ON DUPLICATE KEY UPDATE views = views + 1, last_viewed_at = VALUES(last_viewed_at)', [$userId, (int)$lesson['id'], (int)$lesson['course_id'], now(), now()])->rowCount() === 1;
+        DB::run('UPDATE {enrollments} SET last_accessed_at = ?' . ($new ? ', lessons_started = lessons_started + 1' : '') . ' WHERE user_id = ? AND course_id = ?', [now(), $userId, (int)$lesson['course_id']]);
         Hooks::fire('lesson.viewed', $userId, $lesson);}
 
     /** Save playback position; auto-completes past the configured threshold. Returns true if newly completed. */
@@ -17,8 +17,10 @@ class Progress {
         $duration = max(0, $duration);
         $position = max(0, min($position, $duration ?: $position));
         $pct = $duration > 0 ? (int)min(100, round($position / $duration * 100)) : 0;
-        DB::run('INSERT INTO {lesson_progress} (user_id, lesson_id, course_id, position, duration, percent, last_viewed_at, created_at) VALUES (?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE position = VALUES(position), duration = VALUES(duration), percent = GREATEST(percent, VALUES(percent)), last_viewed_at = VALUES(last_viewed_at)', [$userId, (int)$lesson['id'], (int)$lesson['course_id'], $position, $duration, $pct, now(), now()]);
-        if ($pct >= (int)Settings::get('video_complete_percent', 90)) {
+        $new = DB::run('INSERT INTO {lesson_progress} (user_id, lesson_id, course_id, position, duration, percent, last_viewed_at, created_at) VALUES (?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE position = VALUES(position), duration = VALUES(duration), percent = GREATEST(percent, VALUES(percent)), last_viewed_at = VALUES(last_viewed_at)', [$userId, (int)$lesson['id'], (int)$lesson['course_id'], $position, $duration, $pct, now(), now()])->rowCount() === 1;
+        if ($new) {
+            self::sync($userId, (int)$lesson['course_id']);}
+        if ($pct >= (int)Settings::get('video_complete_percent', 90) && Hooks::filter('lesson.can_complete', true, $lesson, \App\Core\Auth::user() ?? ['role' => 'student', 'id' => $userId])) {
             return self::complete($userId, $lesson);}
         return false;}
 
@@ -29,12 +31,24 @@ class Progress {
             if ($exists) {
                 return false;}
             DB::insert('lesson_progress', ['user_id' => $userId, 'lesson_id' => (int)$lesson['id'], 'course_id' => (int)$lesson['course_id'], 'percent' => 100, 'completed_at' => now(), 'last_viewed_at' => now(), 'created_at' => now(), 'views' => 1]);}
+        self::sync($userId, (int)$lesson['course_id']);
         Hooks::fire('lesson.completed', $userId, $lesson);
         self::checkCourseComplete($userId, (int)$lesson['course_id']);
         return true;}
 
     public static function uncomplete(int $userId, int $lessonId): void {
-        DB::run('UPDATE {lesson_progress} SET completed_at = NULL, percent = LEAST(percent, 99) WHERE user_id = ? AND lesson_id = ?', [$userId, $lessonId]);}
+        DB::run('UPDATE {lesson_progress} SET completed_at = NULL, percent = LEAST(percent, 99) WHERE user_id = ? AND lesson_id = ?', [$userId, $lessonId]);
+        $cid = (int)DB::val('SELECT course_id FROM {lessons} WHERE id = ?', [$lessonId]);
+        if ($cid) {
+            self::sync($userId, $cid);}}
+
+    /** Recount one student's started/completed lessons in a course (a small index range). */
+    public static function sync(int $userId, int $courseId): void {
+        DB::run('UPDATE {enrollments} e SET lessons_started = (SELECT COUNT(*) FROM {lesson_progress} p WHERE p.course_id = e.course_id AND p.user_id = e.user_id), lessons_done = (SELECT COUNT(p.completed_at) FROM {lesson_progress} p WHERE p.course_id = e.course_id AND p.user_id = e.user_id) WHERE e.user_id = ? AND e.course_id = ?', [$userId, $courseId]);}
+
+    /** Recount every enrollment in one grouped pass (migration backfill and the daily safety check). */
+    public static function resyncAll(): void {
+        DB::run('UPDATE {enrollments} e LEFT JOIN (SELECT course_id, user_id, COUNT(*) s, COUNT(completed_at) d FROM {lesson_progress} GROUP BY course_id, user_id) p ON p.course_id = e.course_id AND p.user_id = e.user_id SET e.lessons_started = COALESCE(p.s, 0), e.lessons_done = COALESCE(p.d, 0)');}
 
     private static function checkCourseComplete(int $userId, int $courseId): void {
         $p = self::forCourses($userId, [$courseId])[$courseId] ?? null;
@@ -42,7 +56,7 @@ class Progress {
             $n = DB::run('UPDATE {enrollments} SET completed_at = ? WHERE user_id = ? AND course_id = ? AND completed_at IS NULL', [now(), $userId, $courseId])->rowCount();
             if ($n) {
                 $c = DB::one('SELECT title, slug FROM {courses} WHERE id = ?', [$courseId]);
-                Notifier::notify($userId, 'Course completed: ' . ($c['title'] ?? ''), 'Amazing work — you finished every lesson!', '/courses/' . ($c['slug'] ?? ''), 'achievement');
+                Notifier::notify($userId, 'Course completed: ' . ($c['title'] ?? ''), 'Amazing work, you finished every lesson!', '/courses/' . ($c['slug'] ?? ''), 'achievement');
                 Hooks::fire('course.completed', $userId, $courseId);}}}
 
     /** @return array<int, array{total:int, completed:int, percent:int}> */

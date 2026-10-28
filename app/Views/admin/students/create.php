@@ -7,7 +7,7 @@ $crumbs = ['Students' => '/admin/students'];
 <?= csrf_field() ?>
 <div class="card stack">
 <div class="card-head"><h3>Student details</h3></div>
-<div class="grid-2"><div class="field"><label>Email</label><input type="email" name="email" value="<?= e(old('email')) ?>" required autofocus><?= field_error('email') ?></div><div class="field"><label>Full name</label><input name="name" value="<?= e(old('name')) ?>" placeholder="Optional — derived from email"></div></div>
+<div class="grid-2"><div class="field"><label>Email</label><input type="email" name="email" value="<?= e(old('email')) ?>" required autofocus><?= field_error('email') ?></div><div class="field"><label>Full name</label><input name="name" value="<?= e(old('name')) ?>" placeholder="Optional, derived from email"></div></div>
 <div class="field"><label>Phone</label><input name="phone" value="<?= e(old('phone')) ?>"></div>
 <div class="field"><label>Password</label><input type="password" name="password" autocomplete="new-password" placeholder="Leave empty to let the student choose (recommended)"><?= field_error('password') ?></div>
 <hr>

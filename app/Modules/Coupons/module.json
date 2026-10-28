@@ -1,0 +1,15 @@
+{
+ "name": "Coupons",
+ "description": "Discount codes (percent or fixed) for paid courses, with usage limits, expiry and shareable discount links.",
+ "version": "1.0.0",
+ "author": "Zeroes",
+ "icon": "sparkles",
+ "color": "pink",
+ "category": "Sales",
+ "settings": "/admin/coupons",
+ "features": [
+  "Percent or fixed discounts",
+  "Usage limits & expiry",
+  "Shareable discount links"
+ ]
+}

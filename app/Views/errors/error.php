@@ -6,6 +6,7 @@ use App\Core\Theme;
 <body class="auth-body">
 <div class="error-page">
 <?php partial('logo'); ?>
+<?= illus((int)$code === 403 || (int)$code === 419 ? 'locked' : '404') ?>
 <div class="error-code"><?= (int)$code ?></div>
 <h1><?= e($title) ?></h1>
 <p class="muted"><?= e($message ?: ($code === 404 ? 'The page you are looking for does not exist or has moved.' : 'Please try again.')) ?></p>

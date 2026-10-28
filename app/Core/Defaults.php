@@ -13,7 +13,7 @@ class Defaults {
             'site_name' => 'Zeroes', 'site_tagline' => 'Learn something new, every day.', 'timezone' => 'UTC', 'date_format' => 'M j, Y', 'time_format' => 'g:i A',
             'support_email' => '', 'logo' => '', 'logo_light' => '', 'favicon' => '',
             'heading_font' => 'Inter Tight', 'body_font' => 'Inter', 'heading_weight' => '700', 'base_font_size' => '15',
-            'default_theme' => 'dark', 'allow_theme_toggle' => true, 'radius' => '14', 'button_radius' => '10', 'button_style' => 'solid', 'shadow' => 'soft',
+            'default_theme' => 'dark', 'allow_theme_toggle' => true, 'radius' => '18', 'button_radius' => '12', 'button_style' => 'solid', 'shadow' => 'soft',
             'palette_dark' => self::palettes()['dark'], 'palette_light' => self::palettes()['light'], 'custom_css' => '',
             'login_title' => 'Welcome back', 'login_subtitle' => 'Sign in to continue your learning journey.',
             'mail_driver' => '', 'mail_from_name' => '', 'mail_from_email' => '', 'smtp_host' => '', 'smtp_port' => '587', 'smtp_user' => '', 'smtp_pass' => '', 'smtp_secure' => 'tls',
@@ -22,29 +22,29 @@ class Defaults {
             'bunny_library_id' => '', 'bunny_token_key' => '', 'bunny_cdn_host' => '',
             'quotes' => self::quotes(), 'show_quotes' => true,
             'update_repo' => 'narendersinghh/Zero-LMS', 'update_channel' => 'release', 'update_branch' => 'main', 'update_token' => '', 'installed_commit' => '',
-            'modules_enabled' => [], 'cron_last_run' => '', 'cron_secret' => '', 'web_cron' => true,];}
+            'modules_enabled' => [], 'allow_registration' => true, 'store_enabled' => false, 'store_home' => true, 'store_title' => 'Explore our courses', 'store_subtitle' => 'Practical lessons, one day at a time. Pick a course and start today.', 'upi_enabled' => true, 'upi_vpa' => '', 'upi_payee_name' => '', 'upi_instructions' => '', 'upi_provisional_access' => false, 'upi_require_proof' => false, 'currency' => 'INR', 'cron_last_run' => '', 'cron_secret' => '', 'web_cron' => true,];}
 
     public static function quotes(): array {
         return [
-            'The expert in anything was once a beginner. — Helen Hayes',
+            'The expert in anything was once a beginner. - Helen Hayes',
             'Small daily improvements are the key to staggering long-term results.',
-            'Learning never exhausts the mind. — Leonardo da Vinci',
-            'Success is the sum of small efforts, repeated day in and day out. — Robert Collier',
-            'The beautiful thing about learning is that nobody can take it away from you. — B.B. King',
-            'Don\'t watch the clock; do what it does. Keep going. — Sam Levenson',
-            'An investment in knowledge pays the best interest. — Benjamin Franklin',
-            'You don\'t have to be great to start, but you have to start to be great. — Zig Ziglar',
+            'Learning never exhausts the mind. - Leonardo da Vinci',
+            'Success is the sum of small efforts, repeated day in and day out. - Robert Collier',
+            'The beautiful thing about learning is that nobody can take it away from you. - B.B. King',
+            'Don\'t watch the clock; do what it does. Keep going. - Sam Levenson',
+            'An investment in knowledge pays the best interest. - Benjamin Franklin',
+            'You don\'t have to be great to start, but you have to start to be great. - Zig Ziglar',
             'Discipline is choosing between what you want now and what you want most.',
             'Every lesson completed is a step closer to the person you want to become.',
             'Consistency beats intensity. Show up today.',
-            'The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice. — Brian Herbert',
-            'What we learn with pleasure we never forget. — Alfred Mercier',
+            'The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice. - Brian Herbert',
+            'What we learn with pleasure we never forget. - Alfred Mercier',
             'Progress, not perfection.',
-            'It always seems impossible until it\'s done. — Nelson Mandela',];}
+            'It always seems impossible until it\'s done. - Nelson Mandela',];}
 
     public static function emailTemplates(): array {
         return [
-            'welcome' => ['name' => 'Welcome / account setup', 'subject' => 'Welcome to {{site_name}} — set up your account',
+            'welcome' => ['name' => 'Welcome / account setup', 'subject' => 'Welcome to {{site_name}}: set up your account',
                 'body' => "<h1>Welcome, {{first_name}}!</h1><p>An account has been created for you on <strong>{{site_name}}</strong>{{course_line}}.</p><p>Click the button below to choose your password and start learning. This link expires in {{link_hours}} hours.</p><p class=\"btn-wrap\"><a class=\"btn\" href=\"{{setup_link}}\">Set up my account</a></p><p><strong>How to log in later:</strong><br>Go to <a href=\"{{login_url}}\">{{login_url}}</a> and sign in with <strong>{{email}}</strong> and the password you choose.</p>"],
             'enrolled' => ['name' => 'Added to a course', 'subject' => 'You now have access to {{course_title}}',
                 'body' => "<h1>You're in, {{first_name}}!</h1><p>You've been given access to <strong>{{course_title}}</strong>.</p><p>{{access_line}}</p><p class=\"btn-wrap\"><a class=\"btn\" href=\"{{course_url}}\">Start learning</a></p><p>Sign in at <a href=\"{{login_url}}\">{{login_url}}</a> with <strong>{{email}}</strong>.</p>"],
